@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import React, { memo, useState, useMemo } from "react";
 import {
   FolderKanban,
   Plus,
@@ -6,7 +6,9 @@ import {
   Trash2,
   Sparkles,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserCheck,
+  ChevronDown
 } from "lucide-react";
 
 export const Sidebar = memo(function Sidebar({
@@ -20,6 +22,36 @@ export const Sidebar = memo(function Sidebar({
   onOpenDeletePortfolio
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [collapsedAtcs, setCollapsedAtcs] = useState({});
+
+  // Group portfolios by ATC Responsable
+  const groupedByAtc = useMemo(() => {
+    const groups = {};
+    portfolios.forEach((p) => {
+      const atcName = (p.atc && p.atc.trim()) ? p.atc.trim() : "Sin Asignar";
+      if (!groups[atcName]) {
+        groups[atcName] = [];
+      }
+      groups[atcName].push(p);
+    });
+
+    // Sort ATC groups alphabetically, keeping "Sin Asignar" at the end if desired
+    return Object.keys(groups).sort((a, b) => {
+      if (a === "Sin Asignar") return 1;
+      if (b === "Sin Asignar") return -1;
+      return a.localeCompare(b);
+    }).reduce((acc, key) => {
+      acc[key] = groups[key];
+      return acc;
+    }, {});
+  }, [portfolios]);
+
+  const toggleAtcCollapse = (atcName) => {
+    setCollapsedAtcs((prev) => ({
+      ...prev,
+      [atcName]: !prev[atcName]
+    }));
+  };
 
   return (
     <aside className={`glass-navy flex flex-col h-screen shrink-0 border-r border-navy-light/60 select-none shadow-xl transition-all duration-300 ease-in-out ${collapsed ? "w-14" : "w-64"}`}>
@@ -93,9 +125,9 @@ export const Sidebar = memo(function Sidebar({
         </button>
       </div>
 
-      {/* Portfolios Section */}
-      <div className="flex-1 overflow-y-auto py-3 space-y-1.5 overflow-x-hidden">
-        {/* Expand button — only shown when collapsed, at top of list */}
+      {/* Portfolios Section Grouped by ATC */}
+      <div className="flex-1 overflow-y-auto py-3 space-y-3 overflow-x-hidden">
+        {/* Expand button & Add Portfolio — only shown when collapsed, at top of list */}
         {collapsed ? (
           <div className="flex flex-col items-center gap-1 pb-1">
             <button
@@ -115,9 +147,9 @@ export const Sidebar = memo(function Sidebar({
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between px-5 pb-2">
+          <div className="flex items-center justify-between px-5 pb-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-nashville/80">
-              Portafolios ({portfolios.length})
+              Grupos por ATC ({Object.keys(groupedByAtc).length})
             </span>
             <button
               onClick={onOpenCreatePortfolio}
@@ -130,95 +162,134 @@ export const Sidebar = memo(function Sidebar({
           </div>
         )}
 
-        {portfolios.map((portfolio) => {
-          const isActive = portfolio.id === activePortfolioId;
-          const delayedCount = (portfolio.projects || []).filter(
-            (p) => (p.status || "").toLowerCase().includes("atrasad") || (Number(p.gap) || 0) < -5
-          ).length;
+        {/* Render ATC Groups */}
+        {Object.entries(groupedByAtc).map(([atcName, atcPortfolios]) => {
+          const isAtcCollapsed = Boolean(collapsedAtcs[atcName]);
+          const totalAtcProjects = atcPortfolios.reduce((acc, p) => acc + (p.projects || []).length, 0);
 
-          return collapsed ? (
-            /* ── COLLAPSED: icon only ── */
-            <div key={portfolio.id} className="px-1.5">
-              <button
-                type="button"
-                onClick={() => onSelectPortfolio(portfolio.id)}
-                title={`${portfolio.name}${delayedCount > 0 ? ` • ${delayedCount} atrasados` : ""}`}
-                className={`w-full flex items-center justify-center p-2 rounded-xl transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-lemony text-navy shadow-md"
-                    : "text-nashville hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <div className="relative">
-                  <FolderKanban className="w-4 h-4" />
-                  {delayedCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-rose-500 text-white text-[8px] font-black flex items-center justify-center leading-none">
-                      {delayedCount > 9 ? "9+" : delayedCount}
+          return (
+            <div key={atcName} className="space-y-1">
+              {/* ATC Group Header */}
+              {!collapsed && (
+                <div
+                  onClick={() => toggleAtcCollapse(atcName)}
+                  className="flex items-center justify-between px-4 py-1 text-[11px] font-bold text-nashville/90 hover:text-white cursor-pointer group transition-colors"
+                >
+                  <div className="flex items-center gap-1.5 truncate">
+                    <UserCheck className="w-3.5 h-3.5 text-lemony shrink-0" />
+                    <span className="truncate font-black tracking-tight text-white/90">
+                      {atcName === "Sin Asignar" ? "Sin ATC Asignado" : `ATC: ${atcName}`}
                     </span>
-                  )}
-                </div>
-              </button>
-            </div>
-          ) : (
-            /* ── EXPANDED: full row ── */
-            <div
-              key={portfolio.id}
-              className={`group relative flex items-center justify-between rounded-2xl mx-3 px-3.5 py-3 text-xs font-medium transition-all cursor-pointer ${
-                isActive
-                  ? "bg-gradient-to-r from-lemony to-lemony-light text-navy font-black shadow-md scale-[1.02]"
-                  : "text-white/80 hover:bg-white/10 hover:text-white"
-              }`}
-              onClick={() => onSelectPortfolio(portfolio.id)}
-            >
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <FolderKanban
-                  className={`w-4 h-4 shrink-0 ${isActive ? "text-navy" : "text-nashville"}`}
-                />
-                <div className="truncate">
-                  <p className="truncate font-bold tracking-tight">{portfolio.name}</p>
-                  <div className={`flex items-center gap-1.5 text-[10px] font-semibold mt-0.5 ${isActive ? "text-navy/80" : "text-nashville"}`}>
-                    <span>{(portfolio.projects || []).length} proyectos</span>
-                    {delayedCount > 0 && (
-                      <span className={`${isActive ? "text-rose-700" : "text-rose-400"} font-black`}>
-                        • {delayedCount} atrasados
-                      </span>
-                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-white/10 text-nashville font-semibold">
+                      {atcPortfolios.length} {atcPortfolios.length === 1 ? "port" : "ports"}
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-white/40 group-hover:text-white transition-transform ${
+                        isAtcCollapsed ? "-rotate-90" : "rotate-0"
+                      }`}
+                    />
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Action Buttons on Hover */}
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenEditPortfolio(portfolio);
-                  }}
-                  className={`p-1 rounded-md transition-colors cursor-pointer ${isActive ? "text-navy hover:bg-navy/10" : "text-white/50 hover:text-white hover:bg-white/10"}`}
-                  title="Editar portafolio"
-                >
-                  <Edit3 className="w-3 h-3" />
-                </button>
-                {portfolios.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenDeletePortfolio(portfolio);
-                    }}
-                    className="p-1 rounded-md text-rose-400 hover:text-rose-300 hover:bg-white/10 transition-colors cursor-pointer"
-                    title="Eliminar portafolio"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+              {/* Portfolios list under this ATC */}
+              {(!isAtcCollapsed || collapsed) && (
+                <div className="space-y-1">
+                  {atcPortfolios.map((portfolio) => {
+                    const isActive = portfolio.id === activePortfolioId;
+                    const delayedCount = (portfolio.projects || []).filter(
+                      (p) => (p.status || "").toLowerCase().includes("atrasad") || (Number(p.gap) || 0) < -5
+                    ).length;
+
+                    return collapsed ? (
+                      /* ── COLLAPSED: icon only ── */
+                      <div key={portfolio.id} className="px-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onSelectPortfolio(portfolio.id)}
+                          title={`[ATC: ${portfolio.atc || "Sin Asignar"}] ${portfolio.name}${delayedCount > 0 ? ` • ${delayedCount} atrasados` : ""}`}
+                          className={`w-full flex items-center justify-center p-2 rounded-xl transition-all cursor-pointer ${
+                            isActive
+                              ? "bg-lemony text-navy shadow-md"
+                              : "text-nashville hover:bg-white/10 hover:text-white"
+                          }`}
+                        >
+                          <div className="relative">
+                            <FolderKanban className="w-4 h-4" />
+                            {delayedCount > 0 && (
+                              <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-rose-500 text-white text-[8px] font-black flex items-center justify-center leading-none">
+                                {delayedCount > 9 ? "9+" : delayedCount}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      </div>
+                    ) : (
+                      /* ── EXPANDED: full row ── */
+                      <div
+                        key={portfolio.id}
+                        className={`group relative flex items-center justify-between rounded-2xl mx-3 px-3.5 py-2.5 text-xs font-medium transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-gradient-to-r from-lemony to-lemony-light text-navy font-black shadow-md scale-[1.02]"
+                            : "text-white/80 hover:bg-white/10 hover:text-white"
+                        }`}
+                        onClick={() => onSelectPortfolio(portfolio.id)}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <FolderKanban
+                            className={`w-4 h-4 shrink-0 ${isActive ? "text-navy" : "text-nashville"}`}
+                          />
+                          <div className="truncate">
+                            <p className="truncate font-bold tracking-tight">{portfolio.name}</p>
+                            <div className={`flex items-center gap-1.5 text-[10px] font-semibold mt-0.5 ${isActive ? "text-navy/80" : "text-nashville"}`}>
+                              <span>{(portfolio.projects || []).length} proyectos</span>
+                              {delayedCount > 0 && (
+                                <span className={`${isActive ? "text-rose-700" : "text-rose-400"} font-black`}>
+                                  • {delayedCount} atrasados
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons on Hover */}
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenEditPortfolio(portfolio);
+                            }}
+                            className={`p-1 rounded-md transition-colors cursor-pointer ${isActive ? "text-navy hover:bg-navy/10" : "text-white/50 hover:text-white hover:bg-white/10"}`}
+                            title="Editar portafolio y ATC"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                          {portfolios.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenDeletePortfolio(portfolio);
+                              }}
+                              className="p-1 rounded-md text-rose-400 hover:text-rose-300 hover:bg-white/10 transition-colors cursor-pointer"
+                              title="Eliminar portafolio"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
-
     </aside>
   );
 });

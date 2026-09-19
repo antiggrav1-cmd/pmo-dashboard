@@ -22,6 +22,7 @@ export const Navbar = memo(function Navbar({
   onExportExcel,
   onOpenExecutiveReport,
   currentPortfolioName = "Portafolio",
+  currentPortfolioAtc = "",
   isGlobalView = false,
   syncStatus = "local"
 }) {
@@ -38,6 +39,12 @@ export const Navbar = memo(function Navbar({
               }
               <span>{isGlobalView ? "Dashboard Global" : "Portafolio Activo"}</span>
             </span>
+
+            {!isGlobalView && currentPortfolioAtc && currentPortfolioAtc !== "Sin Asignar" && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-navy/10 text-navy border border-navy/20 flex items-center gap-1">
+                <span>ATC: {currentPortfolioAtc}</span>
+              </span>
+            )}
 
             {/* Supabase Live Status Badge */}
             {syncStatus === "connected" && (

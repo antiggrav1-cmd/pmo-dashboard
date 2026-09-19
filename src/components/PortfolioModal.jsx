@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { X, FolderPlus, Check } from "lucide-react";
+import { X, FolderPlus, Check, UserCheck } from "lucide-react";
 
 export function PortfolioModal({ isOpen, portfolio, onSave, onClose }) {
   const [formData, setFormData] = useState({
     name: "",
     code: "",
+    atc: "",
     description: ""
   });
 
@@ -13,12 +14,14 @@ export function PortfolioModal({ isOpen, portfolio, onSave, onClose }) {
       setFormData({
         name: portfolio.name || "",
         code: portfolio.code || "",
+        atc: portfolio.atc || "",
         description: portfolio.description || ""
       });
     } else {
       setFormData({
         name: "",
         code: `PORT-${Math.floor(10 + Math.random() * 90)}`,
+        atc: "",
         description: ""
       });
     }
@@ -32,6 +35,7 @@ export function PortfolioModal({ isOpen, portfolio, onSave, onClose }) {
 
     onSave({
       ...formData,
+      atc: formData.atc.trim() || "Sin Asignar",
       id: portfolio ? portfolio.id : `port-${Date.now()}`,
       projects: portfolio ? portfolio.projects : [],
       createdAt: portfolio ? portfolio.createdAt : new Date().toISOString().slice(0, 10)
@@ -76,17 +80,33 @@ export function PortfolioModal({ isOpen, portfolio, onSave, onClose }) {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-              Código / Sigla del Portafolio
-            </label>
-            <input
-              type="text"
-              placeholder="Ej: PORT-03 o TRANS-2026"
-              value={formData.code}
-              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+                Código / Sigla
+              </label>
+              <input
+                type="text"
+                placeholder="Ej: PORT-03 o TRANS-2026"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-navy" />
+                <span>ATC Responsable</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Ej: Ing. Juan Pérez, ATC Norte..."
+                value={formData.atc}
+                onChange={(e) => setFormData({ ...formData, atc: e.target.value })}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+              />
+            </div>
           </div>
 
           <div>

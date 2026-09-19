@@ -173,6 +173,7 @@ export function App() {
           onExportExcel={handleExportExcel}
           onOpenExecutiveReport={() => executiveReportModal.open()}
           currentPortfolioName={viewMode === "ander-dashboard" ? "Dashboard General" : currentPortfolio?.name}
+          currentPortfolioAtc={currentPortfolio?.atc}
           isGlobalView={viewMode === "ander-dashboard"}
           syncStatus={syncStatus}
         />

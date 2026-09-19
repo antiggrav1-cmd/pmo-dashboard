@@ -194,6 +194,7 @@ export function normalizePortfolio(portfolio = {}) {
     id: portfolio.id || `port-${Date.now()}`,
     name: portfolio.name ? String(portfolio.name).trim() : "Nuevo Portafolio",
     code: portfolio.code ? String(portfolio.code).trim() : "PORT-01",
+    atc: portfolio.atc ? String(portfolio.atc).trim() : (portfolio.atcResponsible ? String(portfolio.atcResponsible).trim() : "Sin Asignar"),
     description: portfolio.description ? String(portfolio.description).trim() : "",
     projects: Array.isArray(portfolio.projects)
       ? portfolio.projects.map(createProject)
