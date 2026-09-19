@@ -148,7 +148,7 @@ export const AnderDashboard = memo(function AnderDashboard({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Header Banner: Dashboard Ander */}
+      {/* Header Banner: Dashboard General */}
       <div className="glass-navy p-6 rounded-3xl text-white relative overflow-hidden shadow-xl border border-navy-light/60">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-lemony/10 to-transparent pointer-events-none"></div>
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-4">
@@ -159,7 +159,7 @@ export const AnderDashboard = memo(function AnderDashboard({
               </div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-3">
-                  Dashboard Ander
+                  Dashboard General
                   <span className="text-xs px-2.5 py-0.5 rounded-full bg-lemony text-navy font-black tracking-wider uppercase">
                     Salud Global
                   </span>
@@ -192,7 +192,7 @@ export const AnderDashboard = memo(function AnderDashboard({
                   type="button"
                   onClick={onOpenExecutiveReport}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black text-navy bg-lemony hover:bg-lemony-light shadow-md transition-all cursor-pointer"
-                  title="Informe Ejecutivo consolidado del Dashboard Ander"
+                  title="Informe Ejecutivo consolidado del Dashboard General"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Informe Global</span>

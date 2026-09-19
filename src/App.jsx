@@ -129,7 +129,7 @@ export function App() {
   const reportPortfolio = viewMode === "ander-dashboard"
     ? {
         id: "dashboard-ander",
-        name: "Dashboard Ander — Consolidado",
+        name: "Dashboard General — Consolidado",
         code: "PMO-GLOBAL",
         description: "Informe ejecutivo consolidado de todos los portafolios activos.",
         projects: portfolios.flatMap((portfolio) => (portfolio.projects || []).map((project) => ({
@@ -143,7 +143,7 @@ export function App() {
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
-      {/* Sidebar: Portfolio list, operations & Dashboard Ander */}
+      {/* Sidebar: Portfolio list, operations & Dashboard General */}
       <Sidebar
         portfolios={portfolios}
         activePortfolioId={activePortfolioId}
@@ -172,7 +172,7 @@ export function App() {
           onOpenImportModal={() => importModal.open()}
           onExportExcel={handleExportExcel}
           onOpenExecutiveReport={() => executiveReportModal.open()}
-          currentPortfolioName={viewMode === "ander-dashboard" ? "Dashboard Ander" : currentPortfolio?.name}
+          currentPortfolioName={viewMode === "ander-dashboard" ? "Dashboard General" : currentPortfolio?.name}
           isGlobalView={viewMode === "ander-dashboard"}
           syncStatus={syncStatus}
         />

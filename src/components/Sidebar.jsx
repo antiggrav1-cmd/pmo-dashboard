@@ -54,12 +54,12 @@ export const Sidebar = memo(function Sidebar({
         )}
       </div>
 
-      {/* Dashboard Ander Master Button */}
+      {/* Dashboard General Master Button */}
       <div className={`border-b border-navy-light/40 ${collapsed ? "px-1.5 py-2" : "p-3"}`}>
         <button
           type="button"
           onClick={onOpenAnderDashboard}
-          title={collapsed ? "Dashboard Ander — Salud de Portafolios" : undefined}
+          title={collapsed ? "Dashboard General — Salud de Portafolios" : undefined}
           className={`w-full flex items-center transition-all cursor-pointer shadow-md rounded-2xl ${
             collapsed ? "justify-center p-2" : "justify-between px-3.5 py-2.5"
           } text-xs font-bold ${
@@ -76,7 +76,7 @@ export const Sidebar = memo(function Sidebar({
             </div>
             {!collapsed && (
               <div className="text-left">
-                <span className="block font-black tracking-tight text-[12px] leading-tight">Dashboard Ander</span>
+                <span className="block font-black tracking-tight text-[12px] leading-tight">Dashboard General</span>
                 <span className={`block text-[10px] font-semibold ${isAnderDashboardActive ? "text-navy/80" : "text-nashville"}`}>
                   Salud de Portafolios
                 </span>
