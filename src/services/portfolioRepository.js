@@ -1,7 +1,6 @@
 import { loadPortfolios, savePortfolios, resetToDefaultData } from "../utils/storage";
 import { normalizePortfolio } from "../models/projectModel";
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
-import { INITIAL_PORTFOLIOS } from "../data/initialData";
 
 const TABLE_NAME = "pmo_portfolios";
 
@@ -15,13 +14,13 @@ export const portfolioRepository = {
   getAllLocal() {
     try {
       const raw = loadPortfolios();
-      if (!Array.isArray(raw) || raw.length === 0) {
-        return this.resetLocal();
+      if (!Array.isArray(raw)) {
+        return [];
       }
       return raw.map(normalizePortfolio);
     } catch (e) {
       console.error("Error loading portfolios from storage:", e);
-      return this.resetLocal();
+      return [];
     }
   },
 
@@ -48,11 +47,8 @@ export const portfolioRepository = {
         return this.getAllLocal();
       }
 
-      if (!data || data.length === 0) {
-        // Cloud is empty on first run: auto-seed from initial baseline data
-        console.log("Supabase table is empty. Auto-seeding initial portfolios...");
-        await this.seedInitialDataToCloud();
-        return this.getAllLocal();
+      if (!data) {
+        return [];
       }
 
       const normalized = data.map((item) =>
@@ -60,6 +56,7 @@ export const portfolioRepository = {
           id: item.id,
           name: item.name,
           code: item.code,
+          atc: item.atc || item.atcResponsible || "Sin Asignar",
           description: item.description,
           projects: item.projects || []
         })
@@ -84,11 +81,14 @@ export const portfolioRepository = {
       savePortfolios(normalized);
 
       // 2. Cloud persistence
-      if (isSupabaseConfigured && supabase && normalized.length > 0) {
+      if (isSupabaseConfigured && supabase) {
+        if (normalized.length === 0) return true;
+
         const rows = normalized.map((p) => ({
           id: p.id,
           name: p.name,
           code: p.code || "PORT-01",
+          atc: p.atc || "Sin Asignar",
           description: p.description || "",
           projects: p.projects || [],
           updated_at: new Date().toISOString()
@@ -121,6 +121,7 @@ export const portfolioRepository = {
           id: normalized.id,
           name: normalized.name,
           code: normalized.code || "PORT-01",
+          atc: normalized.atc || "Sin Asignar",
           description: normalized.description || "",
           projects: normalized.projects || [],
           updated_at: new Date().toISOString()
@@ -137,7 +138,9 @@ export const portfolioRepository = {
   async deleteFromCloud(portfolioId) {
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from(TABLE_NAME).delete().eq("id", portfolioId);
+        const { error } = await supabase.from(TABLE_NAME).delete().eq("id", portfolioId);
+        if (error) console.error("Error deleting portfolio from Supabase:", error);
+        else console.log(`Deleted portfolio ${portfolioId} from Supabase Cloud.`);
       } catch (err) {
         console.error("Error deleting portfolio from Supabase:", err);
       }
@@ -145,29 +148,7 @@ export const portfolioRepository = {
   },
 
   /**
-   * Seeds baseline initial data into Supabase
-   */
-  async seedInitialDataToCloud() {
-    if (!isSupabaseConfigured || !supabase) return;
-    try {
-      const rows = INITIAL_PORTFOLIOS.map((p) => ({
-        id: p.id,
-        name: p.name,
-        code: p.code || "PORT-01",
-        description: p.description || "",
-        projects: p.projects || [],
-        updated_at: new Date().toISOString()
-      }));
-
-      await supabase.from(TABLE_NAME).upsert(rows, { onConflict: "id" });
-      console.log("Baseline data successfully seeded to Supabase Cloud!");
-    } catch (err) {
-      console.error("Error seeding initial data to Supabase:", err);
-    }
-  },
-
-  /**
-   * Resets local data to defaults
+   * Resets local data
    */
   resetLocal() {
     const defaults = resetToDefaultData();

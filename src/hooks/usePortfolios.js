@@ -11,11 +11,13 @@ export function usePortfolios() {
   });
   const [syncStatus, setSyncStatus] = useState(isSupabaseConfigured ? "connecting" : "local");
   const isBroadcastingRef = useRef(false);
+  const hasLoadedFromCloudRef = useRef(!isSupabaseConfigured);
 
   // 1. Initial Cloud Sync on Mount
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
       setSyncStatus("local");
+      hasLoadedFromCloudRef.current = true;
       return;
     }
 
@@ -25,16 +27,22 @@ export function usePortfolios() {
       try {
         setSyncStatus("connecting");
         const cloudData = await portfolioRepository.fetchAllFromCloud();
-        if (isMounted && cloudData && cloudData.length > 0) {
-          setPortfolios(cloudData);
-          if (!activePortfolioId || !cloudData.some((p) => p.id === activePortfolioId)) {
-            setActivePortfolioId(cloudData[0]?.id || "");
+        if (isMounted) {
+          hasLoadedFromCloudRef.current = true;
+          if (cloudData && cloudData.length > 0) {
+            setPortfolios(cloudData);
+            if (!activePortfolioId || !cloudData.some((p) => p.id === activePortfolioId)) {
+              setActivePortfolioId(cloudData[0]?.id || "");
+            }
           }
           setSyncStatus("connected");
         }
       } catch (err) {
         console.error("Error loading Supabase cloud data:", err);
-        if (isMounted) setSyncStatus("error");
+        if (isMounted) {
+          hasLoadedFromCloudRef.current = true;
+          setSyncStatus("error");
+        }
       }
     }
 
@@ -61,6 +69,7 @@ export function usePortfolios() {
               id: payload.new.id,
               name: payload.new.name,
               code: payload.new.code,
+              atc: payload.new.atc || payload.new.atcResponsible || "Sin Asignar",
               description: payload.new.description,
               projects: payload.new.projects || []
             });
@@ -91,8 +100,12 @@ export function usePortfolios() {
     };
   }, []);
 
-  // 3. Auto-persist changes to local storage & Cloud
+  // 3. Auto-persist changes to local storage & Cloud (only after initial cloud fetch completes)
   useEffect(() => {
+    if (!hasLoadedFromCloudRef.current) {
+      return;
+    }
+
     isBroadcastingRef.current = true;
     portfolioRepository.saveAll(portfolios).finally(() => {
       setTimeout(() => {
@@ -106,6 +119,7 @@ export function usePortfolios() {
     id: "default",
     name: "Mi Portafolio",
     code: "PORT-01",
+    atc: "Sin Asignar",
     description: "",
     projects: []
   };
@@ -182,9 +196,12 @@ export function usePortfolios() {
       }
     });
     setActivePortfolioId(normalized.id);
+    if (isSupabaseConfigured) {
+      portfolioRepository.saveSinglePortfolio(normalized);
+    }
   }, []);
 
-  // Delete a portfolio
+  // Delete a portfolio permanently
   const deletePortfolio = useCallback((portfolioId) => {
     setPortfolios((prev) => {
       const remaining = prev.filter((p) => p.id !== portfolioId);
@@ -193,7 +210,9 @@ export function usePortfolios() {
       }
       return remaining;
     });
-    portfolioRepository.deleteFromCloud(portfolioId);
+    if (isSupabaseConfigured) {
+      portfolioRepository.deleteFromCloud(portfolioId);
+    }
   }, [activePortfolioId]);
 
   // Import projects to current portfolio
@@ -224,16 +243,6 @@ export function usePortfolios() {
     const reset = portfolioRepository.reset();
     setPortfolios(reset);
     setActivePortfolioId(reset[0]?.id || "");
-    if (isSupabaseConfigured) {
-      await portfolioRepository.seedInitialDataToCloud();
-    }
-  }, []);
-
-  // Force seed baseline to cloud
-  const seedCloudData = useCallback(async () => {
-    await portfolioRepository.seedInitialDataToCloud();
-    const refreshed = await portfolioRepository.fetchAllFromCloud();
-    setPortfolios(refreshed);
   }, []);
 
   return {
@@ -250,7 +259,6 @@ export function usePortfolios() {
     deletePortfolio,
     importToCurrentPortfolio,
     importNewPortfolios,
-    resetData,
-    seedCloudData
+    resetData
   };
 }
