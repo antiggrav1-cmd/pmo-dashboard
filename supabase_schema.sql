@@ -8,10 +8,14 @@ CREATE TABLE IF NOT EXISTS public.pmo_portfolios (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     code TEXT DEFAULT 'PORT-01',
+    atc TEXT DEFAULT 'Sin Asignar',
     description TEXT DEFAULT '',
     projects JSONB DEFAULT '[]'::jsonb,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Asegurar columna atc si la tabla ya existía previamente
+ALTER TABLE public.pmo_portfolios ADD COLUMN IF NOT EXISTS atc TEXT DEFAULT 'Sin Asignar';
 
 -- 2. Habilitar Row Level Security (RLS)
 ALTER TABLE public.pmo_portfolios ENABLE ROW LEVEL SECURITY;
@@ -46,4 +50,4 @@ CREATE TRIGGER set_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
-COMMENT ON TABLE public.pmo_portfolios IS 'Tabla principal de portafolios y proyectos del PMO Dashboard con soporte Realtime';
+COMMENT ON TABLE public.pmo_portfolios IS 'Tabla principal de portafolios y proyectos del PMO Dashboard con soporte Realtime y rol ATC';
