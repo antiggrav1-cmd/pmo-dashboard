@@ -6,8 +6,6 @@ import {
   Calendar, 
   Plus,
   X,
-  ArrowDownAZ,
-  ArrowUpAZ,
   SlidersHorizontal
 } from "lucide-react";
 import { ProjectRow } from "./ProjectRow";

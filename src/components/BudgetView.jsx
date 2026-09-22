@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from "react";
-import { DollarSign, TrendingUp, AlertTriangle, Wallet, SlidersHorizontal, Building2, User, Radio } from "lucide-react";
+import { DollarSign, TrendingUp, AlertTriangle, Wallet, SlidersHorizontal, User, Radio } from "lucide-react";
 import { formatCurrencyCop, formatCurrencyUsd } from "../utils/calculations";
 import { getPortfolioBudgetMetrics, getProjectBudgetMetrics } from "../utils/budgetCalculations";
 

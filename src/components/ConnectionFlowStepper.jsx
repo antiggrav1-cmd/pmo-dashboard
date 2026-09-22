@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { Check, Zap, CheckCircle2, ChevronRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { CONNECTION_STATES } from "../models/projectModel";
 
 const STEP_INFO = {
@@ -27,7 +27,7 @@ export const ConnectionFlowStepper = memo(function ConnectionFlowStepper({
           const info = STEP_INFO[state] || { label: state, shortLabel: state, emoji: "•", desc: "" };
           const isCompleted = idx < activeIdx;
           const isCurrent = idx === activeIdx;
-          const isPending = idx > activeIdx;
+          const _isPending = idx > activeIdx;
           const isClickable = interactive && typeof onChangeState === "function";
 
           return (

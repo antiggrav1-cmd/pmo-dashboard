@@ -4,7 +4,6 @@ import {
   getPortfolioMetrics, 
   getPortfolioFinancials, 
   formatDate, 
-  formatCurrencyCop, 
   formatCurrencyUsd 
 } from "../utils/calculations";
 import { CountUpNumber } from "./CountUpNumber";

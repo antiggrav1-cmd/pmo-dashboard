@@ -13,12 +13,6 @@ import {
   Building2,
   Download,
   Loader2,
-  Image as ImageIcon,
-  CheckCircle2,
-  Calendar,
-  Clock,
-  TrendingUp,
-  Award,
   SlidersHorizontal,
   Check
 } from "lucide-react";
@@ -30,9 +24,9 @@ import {
   formatCurrencyCop,
   formatCurrencyUsd
 } from "../utils/calculations";
-import { getProjectBudgetMetrics, getPortfolioBudgetMetrics } from "../utils/budgetCalculations";
+import { getProjectBudgetMetrics } from "../utils/budgetCalculations";
 import { EQUIPMENT_TYPES } from "../utils/equipmentConstants";
-import { getFullEquipmentMetrics, getAllPortfolioBottlenecks } from "../services/equipmentService";
+import { getAllPortfolioBottlenecks } from "../services/equipmentService";
 import { RESTRICTION_STYLES, STATUS_STYLES } from "./CommentsView";
 import { TargetProgressBar } from "./TargetProgressBar";
 
@@ -48,47 +42,41 @@ const formatDateTime = (val) => {
 const ProjectOnePager = memo(function ProjectOnePager({
   project,
   reportDate,
-  bottlenecks = [],
+  bottlenecks: _bottlenecks = [],
   onUpdateProject,
   isPrintAll = false,
   pageIndex = 0,
   totalPages = 1
 }) {
-  if (!project) return null;
-
-  const cregRisk = useMemo(() => getCregRegulatoryRisk(project), [project]);
-  const budget = useMemo(() => getProjectBudgetMetrics(project), [project]);
-  const ms = project.paymentMilestones || [];
+  const cregRisk = useMemo(() => (project ? getCregRegulatoryRisk(project) : null), [project]);
+  const budget = useMemo(() => (project ? getProjectBudgetMetrics(project) : null), [project]);
   
+
   const financialMetrics = useMemo(() => {
-    let totalCop = 0;
-    let totalUsd = 0;
-    let cobradoCop = 0;
-    let cobradoUsd = 0;
-    let cobradoCount = 0;
-
-    ms.forEach((m) => {
-      const vCop = Number(m.valueCop) || 0;
-      const vUsd = Number(m.valueUsd) || 0;
-      totalCop += vCop;
-      totalUsd += vUsd;
-      if ((m.status || "").toLowerCase().includes("cobrad")) {
-        cobradoCop += vCop;
-        cobradoUsd += vUsd;
-        cobradoCount++;
-      }
-    });
-
+    if (!project) return { totalCop: 0, totalUsd: 0, cobradoCop: 0, cobradoUsd: 0, cobradoCount: 0, totalHitos: 0, pctCobrado: 100 };
+    const milestones = project.paymentMilestones || [];
+    const { totalCop, totalUsd, cobradoCop, cobradoUsd, cobradoCount } = milestones.reduce(
+      (acc, m) => {
+        const vCop = Number(m.valueCop) || 0;
+        const vUsd = Number(m.valueUsd) || 0;
+        const isCobrado = (m.status || "").toLowerCase().includes("cobrad");
+        return {
+          totalCop: acc.totalCop + vCop,
+          totalUsd: acc.totalUsd + vUsd,
+          cobradoCop: acc.cobradoCop + (isCobrado ? vCop : 0),
+          cobradoUsd: acc.cobradoUsd + (isCobrado ? vUsd : 0),
+          cobradoCount: acc.cobradoCount + (isCobrado ? 1 : 0),
+        };
+      },
+      { totalCop: 0, totalUsd: 0, cobradoCop: 0, cobradoUsd: 0, cobradoCount: 0 }
+    );
     const pctCobrado = (totalCop + totalUsd * 4000) > 0
       ? Math.round(((cobradoCop + cobradoUsd * 4000) / (totalCop + totalUsd * 4000)) * 100)
       : 100;
+    return { totalCop, totalUsd, cobradoCop, cobradoUsd, cobradoCount, totalHitos: milestones.length, pctCobrado };
+  }, [project]);
 
-    return { totalCop, totalUsd, cobradoCop, cobradoUsd, cobradoCount, totalHitos: ms.length, pctCobrado };
-  }, [ms]);
-
-  const projBottlenecks = useMemo(() => {
-    return (bottlenecks.find((b) => b.projectId === project.id)?.bottlenecks) || [];
-  }, [bottlenecks, project.id]);
+  if (!project) return null;
 
   const comments = project.comments || [];
   const unresolvedComments = comments.filter((c) => c.estado !== "Resuelto" && c.estado !== "Cerrado");
@@ -496,7 +484,7 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
     }));
   };
 
-  const projects = portfolio?.projects || [];
+  const projects = useMemo(() => portfolio?.projects || [], [portfolio?.projects]);
 
   // Update selectedProjectId when initialProjectId or portfolio changes
   useEffect(() => {
@@ -507,7 +495,9 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
     } else if (projects.length > 0 && !selectedProjectId) {
       setSelectedProjectId(projects[0].id);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProjectId, projects]);
+
 
   const handleModeChange = (mode) => {
     setReportMode(mode);
@@ -538,13 +528,6 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
     day: "numeric"
   });
 
-  // Projects with CREG regulatory risk
-  const cregRisks = useMemo(() => {
-    return projects
-      .map((p) => ({ project: p, risk: getCregRegulatoryRisk(p) }))
-      .filter(({ risk }) => risk.riskLevel === "CRITICAL" || risk.riskLevel === "WARNING");
-  }, [projects]);
-
   // Connection state summary
   const connectionStats = useMemo(() => {
     const montaje = projects.filter((p) => (p.connectionState || "Montaje") === "Montaje").length;
@@ -557,45 +540,23 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
 
   // Financial calculations across the entire portfolio
   const financialTotals = useMemo(() => {
-    let totalCop = 0;
-    let totalUsd = 0;
-    let cobradoCop = 0;
-    let cobradoUsd = 0;
-    let porCobrarCop = 0;
-    let porCobrarUsd = 0;
-    let totalHitos = 0;
-    let hitosCobrados = 0;
-
     const projectFinancials = projects.map((p) => {
       const ms = p.paymentMilestones || [];
-      let pCop = 0;
-      let pUsd = 0;
-      let pCobCop = 0;
-      let pCobUsd = 0;
-      let pCobCount = 0;
-
-      ms.forEach((m) => {
-        const vCop = Number(m.valueCop) || 0;
-        const vUsd = Number(m.valueUsd) || 0;
-        pCop += vCop;
-        pUsd += vUsd;
-        totalHitos++;
-
-        if ((m.status || "").toLowerCase().includes("cobrad")) {
-          pCobCop += vCop;
-          pCobUsd += vUsd;
-          pCobCount++;
-          hitosCobrados++;
-        }
-      });
-
-      totalCop += pCop;
-      totalUsd += pUsd;
-      cobradoCop += pCobCop;
-      cobradoUsd += pCobUsd;
-      porCobrarCop += (pCop - pCobCop);
-      porCobrarUsd += (pUsd - pCobUsd);
-
+      const { pCop, pUsd, pCobCop, pCobUsd, pCobCount } = ms.reduce(
+        (acc, m) => {
+          const vCop = Number(m.valueCop) || 0;
+          const vUsd = Number(m.valueUsd) || 0;
+          const isCobrado = (m.status || "").toLowerCase().includes("cobrad");
+          return {
+            pCop: acc.pCop + vCop,
+            pUsd: acc.pUsd + vUsd,
+            pCobCop: acc.pCobCop + (isCobrado ? vCop : 0),
+            pCobUsd: acc.pCobUsd + (isCobrado ? vUsd : 0),
+            pCobCount: acc.pCobCount + (isCobrado ? 1 : 0),
+          };
+        },
+        { pCop: 0, pUsd: 0, pCobCop: 0, pCobUsd: 0, pCobCount: 0 }
+      );
       return {
         projectId: p.id,
         projectName: p.name,
@@ -607,26 +568,31 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
         cobradoUsd: pCobUsd,
         hitosCobrados: pCobCount,
         totalHitos: ms.length,
-        pctCobrado: (pCop + pUsd * 4000) > 0 ? Math.round(((pCobCop + pCobUsd * 4000) / (pCop + pUsd * 4000)) * 100) : 0
+        pctCobrado: (pCop + pUsd * 4000) > 0
+          ? Math.round(((pCobCop + pCobUsd * 4000) / (pCop + pUsd * 4000)) * 100)
+          : 0,
       };
     });
 
-    const globalPct = (totalCop + totalUsd * 4000) > 0 
-      ? Math.round(((cobradoCop + cobradoUsd * 4000) / (totalCop + totalUsd * 4000)) * 100) 
+    const totals = projectFinancials.reduce(
+      (acc, pf) => ({
+        totalCop: acc.totalCop + pf.totalCop,
+        totalUsd: acc.totalUsd + pf.totalUsd,
+        cobradoCop: acc.cobradoCop + pf.cobradoCop,
+        cobradoUsd: acc.cobradoUsd + pf.cobradoUsd,
+        porCobrarCop: acc.porCobrarCop + (pf.totalCop - pf.cobradoCop),
+        porCobrarUsd: acc.porCobrarUsd + (pf.totalUsd - pf.cobradoUsd),
+        totalHitos: acc.totalHitos + pf.totalHitos,
+        hitosCobrados: acc.hitosCobrados + pf.hitosCobrados,
+      }),
+      { totalCop: 0, totalUsd: 0, cobradoCop: 0, cobradoUsd: 0, porCobrarCop: 0, porCobrarUsd: 0, totalHitos: 0, hitosCobrados: 0 }
+    );
+
+    const globalPct = (totals.totalCop + totals.totalUsd * 4000) > 0
+      ? Math.round(((totals.cobradoCop + totals.cobradoUsd * 4000) / (totals.totalCop + totals.totalUsd * 4000)) * 100)
       : 100;
 
-    return {
-      totalCop,
-      totalUsd,
-      cobradoCop,
-      cobradoUsd,
-      porCobrarCop,
-      porCobrarUsd,
-      totalHitos,
-      hitosCobrados,
-      globalPct,
-      projectFinancials
-    };
+    return { ...totals, globalPct, projectFinancials };
   }, [projects]);
 
   // Navigation between projects

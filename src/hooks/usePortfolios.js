@@ -141,7 +141,7 @@ export function usePortfolios() {
           ...port,
           projects: (port.projects || []).map((p) => {
             if (p.id === updatedProject.id || p.id === updatedProject.sourceProjectId || `${port.id}::${p.id}` === updatedProject.id) {
-              const { sourceProjectId, portfolioName, ...cleanProject } = updatedProject;
+              const { sourceProjectId: _sid, portfolioName: _pname, ...cleanProject } = updatedProject;
               return { ...cleanProject, id: p.id };
             }
             return p;

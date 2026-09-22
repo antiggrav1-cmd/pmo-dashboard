@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+﻿import * as XLSX from "xlsx";
 import { calculateGap, determineStatus, formatDate } from "./calculations";
 import { getDefaultEquipment } from "./equipmentConstants";
 
@@ -42,7 +42,7 @@ export function exportToExcel(portfolioOrList, filename = "Reporte_PMO_Proyectos
       { wch: 35 }, // Observaciones
     ];
 
-    const baseName = (portfolio.name || `Portafolio ${idx + 1}`).replace(/[\\/?*\[\]:]/g, "");
+    const baseName = (portfolio.name || `Portafolio ${idx + 1}`).replace(/[\\/?*[\]:]/g, "");
     const cronogramaSuffix = " - Cronograma";
     const equipmentSuffix = " - Equipos";
     const cronogramaName = `${baseName.slice(0, 31 - cronogramaSuffix.length)}${cronogramaSuffix}`;
@@ -54,23 +54,23 @@ export function exportToExcel(portfolioOrList, filename = "Reporte_PMO_Proyectos
       const eq = p.equipment || getDefaultEquipment();
       return {
         "Proyecto": p.name || "",
-        "Paneles (Estado)": eq.paneles?.status || "Fabricación",
+        "Paneles (Estado)": eq.paneles?.status || "FabricaciÃ³n",
         "Paneles ETA": formatDate(eq.paneles?.eta),
         "Paneles Marca": eq.paneles?.brand || "",
 
-        "Tracker (Estado)": eq.trackers?.status || "Fabricación",
+        "Tracker (Estado)": eq.trackers?.status || "FabricaciÃ³n",
         "Tracker ETA": formatDate(eq.trackers?.eta),
         "Tracker Marca": eq.trackers?.brand || "",
 
-        "Shelter (Estado)": eq.shelter?.status || "Fabricación",
+        "Shelter (Estado)": eq.shelter?.status || "FabricaciÃ³n",
         "Shelter ETA": formatDate(eq.shelter?.eta),
         "Shelter Marca": eq.shelter?.brand || "",
 
-        "Inversores (Estado)": eq.inversores?.status || "Fabricación",
+        "Inversores (Estado)": eq.inversores?.status || "FabricaciÃ³n",
         "Inversores ETA": formatDate(eq.inversores?.eta),
         "Inversores Marca": eq.inversores?.brand || "",
 
-        "Reconectador (Estado)": eq.reconectador?.status || "Fabricación",
+        "Reconectador (Estado)": eq.reconectador?.status || "FabricaciÃ³n",
         "Reconectador ETA": formatDate(eq.reconectador?.eta),
         "Reconectador Marca": eq.reconectador?.brand || "",
       };

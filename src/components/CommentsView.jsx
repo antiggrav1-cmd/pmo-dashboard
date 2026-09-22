@@ -4,7 +4,6 @@ import {
   Plus,
   Edit3,
   Trash2,
-  Clock,
   User,
   Search,
   CheckCircle2,
@@ -18,8 +17,7 @@ import {
   Download,
   Copy,
   Check,
-  FileDown,
-  Layers
+  FileDown
 } from "lucide-react";
 import { formatDate } from "../utils/calculations";
 import { RESTRICTION_CATEGORIES, RESTRICTION_STATUSES, isCommentCompleted } from "../models/projectModel";
@@ -384,8 +382,8 @@ export const CommentsView = memo(function CommentsView({
     });
   }, [projectUnresolvedMap, downloadSingleProjectTxt]);
 
-  // Download consolidated .txt
-  const handleDownloadConsolidatedTxt = useCallback(() => {
+  // Download consolidated .txt (unused – kept for future button)
+  const _handleDownloadConsolidatedTxt = useCallback(() => {
     const textContent = generateConsolidatedUnresolvedText(
       unresolvedRestrictions,
       portfolioName

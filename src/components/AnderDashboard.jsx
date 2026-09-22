@@ -26,7 +26,7 @@ function PerformanceChip({ label, value }) {
 export const AnderDashboard = memo(function AnderDashboard({
   portfolios = [],
   onSelectPortfolio,
-  onOpenCreatePortfolio,
+  onOpenCreatePortfolio: _onOpenCreatePortfolio,
   onOpenExecutiveReport,
   onExportExcel
 }) {

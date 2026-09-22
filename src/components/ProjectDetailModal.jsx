@@ -11,7 +11,6 @@ import {
   Info,
   Check
 } from "lucide-react";
-import { CONNECTION_STATES } from "../models/projectModel";
 import { formatCurrencyCop, formatCurrencyUsd } from "../utils/calculations";
 import { ConnectionFlowStepper } from "./ConnectionFlowStepper";
 
@@ -31,14 +30,6 @@ const COMMON_OPERATORS = [
   "Enerca (Casanare)",
   "Dispac (Chocó)"
 ];
-
-const STATE_ICONS = {
-  "DD": "📋",
-  "Ingeniería": "📐",
-  "Montaje": "🔧",
-  "Energizado": "⚡",
-  "Entregado": "✅"
-};
 
 export const ProjectDetailModal = memo(function ProjectDetailModal({
   isOpen,

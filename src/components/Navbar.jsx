@@ -3,20 +3,13 @@ import {
   Plus, 
   Download, 
   Upload, 
-  Search,
   FileText,
   LayoutDashboard,
   Cloud,
-  CloudCheck,
-  CloudAlert,
   RefreshCw
 } from "lucide-react";
 
 export const Navbar = memo(function Navbar({
-  searchTerm = "",
-  onSearchChange,
-  statusFilter = "ALL",
-  onStatusFilterChange,
   onOpenCreateProject,
   onOpenImportModal,
   onExportExcel,

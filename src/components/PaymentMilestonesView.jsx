@@ -3,17 +3,14 @@ import {
   Plus, 
   Trash2, 
   DollarSign, 
-  CheckCircle2, 
-  Clock, 
   Zap, 
-  ChevronRight,
   TrendingUp,
   Building2,
   Calendar,
   SlidersHorizontal
 } from "lucide-react";
 import { formatCurrencyCop, formatCurrencyUsd, getDaysRemaining, toInputDateFormat } from "../utils/calculations";
-import { getDefaultPaymentMilestones, CONNECTION_STATES } from "../models/projectModel";
+import { getDefaultPaymentMilestones } from "../models/projectModel";
 import { CurrencyInputCell } from "./cells/CurrencyInputCell";
 import { CountUpNumber } from "./CountUpNumber";
 import { ConnectionFlowStepper } from "./ConnectionFlowStepper";
@@ -27,7 +24,7 @@ const STATUS_COLORS = {
 
 export const PaymentMilestonesView = memo(function PaymentMilestonesView({
   projects = [],
-  portfolioName = "",
+  portfolioName: _portfolioName = "",
   onUpdateProject,
   onOpenProjectDetail
 }) {
@@ -81,7 +78,8 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
     });
   }, [currentProject, milestones, onUpdateProject]);
 
-  const handleCapexChange = useCallback((field, value) => {
+  // eslint-disable-next-line no-unused-vars
+  const _handleCapexChange = useCallback((field, value) => {
     if (!currentProject) return;
     const capex = value === "" ? 0 : Number(value) || 0;
     const percentageField = field === "capexCop" ? "percentageCop" : "percentageUsd";
