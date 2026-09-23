@@ -273,7 +273,8 @@ export function getFpoScheduleRisk(project = {}) {
 }
 
 /**
- * Evaluates pending billing alerts: payment milestones in "En trámite" or "Saldo Pendiente" for > 15 days.
+ * Evaluates in-process billing alerts: all payment milestones in "En trámite" or "Saldo Pendiente"
+ * with their respective elapsed days waiting for disbursement.
  */
 export function getPendingBillingAlerts(projects = []) {
   const alerts = [];
@@ -284,45 +285,46 @@ export function getPendingBillingAlerts(projects = []) {
     const milestones = project.paymentMilestones || [];
     milestones.forEach((m) => {
       const status = m.status || "";
-      const isEnTramite = status === "En trámite" || status === "Saldo Pendiente";
+      const isEnTramite = status === "En trámite" || status === "Saldo Pendiente" || status.toLowerCase().includes("trámite") || status.toLowerCase().includes("tramite") || status.toLowerCase().includes("saldo pendiente");
 
       if (isEnTramite) {
         let daysInProcess = 0;
-        if (m.submittedAt) {
-          const subDate = new Date(m.submittedAt);
+        const dateRef = m.submittedAt || m.radicadoAt || m.date;
+        if (dateRef) {
+          const subDate = new Date(dateRef);
           if (!isNaN(subDate.getTime())) {
             const subDay = new Date(subDate.getFullYear(), subDate.getMonth(), subDate.getDate());
             daysInProcess = Math.max(0, Math.floor((today.getTime() - subDay.getTime()) / (1000 * 60 * 60 * 24)));
           }
         }
 
-        // Alert threshold: > 15 days in process (or in process without registered submission date)
-        if (daysInProcess > 15 || (!m.submittedAt && isEnTramite)) {
-          const amountCop = status === "Saldo Pendiente" && m.saldoPendienteCop !== undefined && m.saldoPendienteCop !== ""
-            ? Number(m.saldoPendienteCop) || 0
-            : Number(m.valueCop) || 0;
-          const amountUsd = status === "Saldo Pendiente" && m.saldoPendienteUsd !== undefined && m.saldoPendienteUsd !== ""
-            ? Number(m.saldoPendienteUsd) || 0
-            : Number(m.valueUsd) || 0;
+        const amountCop = (status === "Saldo Pendiente" || status.toLowerCase().includes("saldo")) && m.saldoPendienteCop !== undefined && m.saldoPendienteCop !== ""
+          ? Number(m.saldoPendienteCop) || 0
+          : Number(m.valueCop) || 0;
+        const amountUsd = (status === "Saldo Pendiente" || status.toLowerCase().includes("saldo")) && m.saldoPendienteUsd !== undefined && m.saldoPendienteUsd !== ""
+          ? Number(m.saldoPendienteUsd) || 0
+          : Number(m.valueUsd) || 0;
 
-          alerts.push({
-            projectId: project.id,
-            projectName: project.name || "Proyecto",
-            milestoneId: m.id,
-            milestoneName: m.name || "Hito de pago",
-            status: m.status,
-            submittedAt: m.submittedAt || null,
-            daysInProcess,
-            amountCop,
-            amountUsd,
-            message: daysInProcess > 0
-              ? `Facturación estancada (${daysInProcess} días en trámite)`
-              : `Facturación en trámite sin fecha de radicación`
-          });
-        }
+        alerts.push({
+          projectId: project.id,
+          projectName: project.name || "Proyecto",
+          milestoneId: m.id,
+          milestoneName: m.name || "Hito de pago",
+          status: m.status,
+          submittedAt: m.submittedAt || m.radicadoAt || m.date || null,
+          daysInProcess,
+          amountCop,
+          amountUsd,
+          message: daysInProcess > 0
+            ? `${daysInProcess} días de espera por desembolso`
+            : `Facturación en trámite (sin fecha de radicación registrada)`
+        });
       }
     });
   });
+
+  // Sort descending by days waiting for disbursement (oldest first)
+  alerts.sort((a, b) => b.daysInProcess - a.daysInProcess);
 
   return alerts;
 }

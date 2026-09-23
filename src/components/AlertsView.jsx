@@ -161,22 +161,22 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
           </p>
         </div>
 
-        {/* Card 4: Facturación Estancada */}
+        {/* Card 4: Facturación en Trámite */}
         <div className={`glass-card glass-glow card-hover p-4 rounded-2xl border shadow-brand/5 transition-all ${billingAlerts.length > 0 ? "border-nashville/40 bg-nashville/5" : "border-slate-200/80"}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-navy font-black text-xs">
               <Clock className="w-4 h-4 text-navy-light" />
-              <span>Facturación Estancada</span>
+              <span>Facturación en Trámite</span>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-nashville/20 text-navy border border-nashville/40">
-              &gt; 15 días
+              Desembolso
             </span>
           </div>
           <p className="text-2xl font-black text-navy mt-2">
             <CountUpNumber value={billingAlerts.length} />
           </p>
           <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-            Hitos en trámite o saldo pendiente demorados en cobro.
+            Hitos en trámite y cuentas de cobro esperando desembolso.
           </p>
         </div>
       </div>
@@ -360,7 +360,7 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
             )}
           </section>
 
-          {/* SECTION 4: FACTURACIÓN ESTANCADA (> 15 DÍAS) */}
+          {/* SECTION 4: FACTURACIÓN EN TRÁMITE */}
           <section className="glass-card rounded-2xl border border-slate-200/80 overflow-hidden min-w-0 transition-all shadow-brand/5 hover:shadow-brand/10">
             <header 
               onClick={() => toggleSection("billing")}
@@ -368,11 +368,11 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
             >
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-navy-light" />
-                <span>Facturación estancada en trámite (&gt; 15 días)</span>
+                <span>Facturación en trámite (Días de espera por desembolso)</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold text-navy bg-nashville/25 px-2 py-0.5 rounded-full border border-nashville/40">
-                  {billingAlerts.length} facturas
+                  {billingAlerts.length} facturas en trámite
                 </span>
                 <ChevronDown className={`w-4 h-4 text-navy transition-transform duration-200 ${openSections.billing ? "rotate-0" : "-rotate-90"}`} />
               </div>
@@ -388,8 +388,12 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
                           <span className="text-slate-300">•</span>
                           <span className="text-slate-700 text-xs font-semibold truncate">{item.milestoneName}</span>
                         </div>
-                        <span className="text-[11px] font-bold text-navy-light whitespace-nowrap">
-                          → ⏳ Facturación Estancada ({item.daysInProcess}d)
+                        <span className={`text-[11px] font-bold whitespace-nowrap px-2 py-0.5 rounded-md ${
+                          item.daysInProcess > 15 
+                            ? "bg-amber-100 text-amber-900 border border-amber-300 font-extrabold" 
+                            : "text-navy bg-nashville/20 border border-nashville/40"
+                        }`}>
+                          ⏳ {item.daysInProcess > 0 ? `${item.daysInProcess} días de espera` : "En trámite"}
                         </span>
                       </div>
 
@@ -400,12 +404,12 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
                         <span className="text-slate-300">•</span>
                         <span>Estado: <strong className="text-navy font-bold">{item.status}</strong></span>
                         <span className="text-slate-300">•</span>
-                        <span>Tiempo: <strong className="text-navy font-black">{item.daysInProcess} días</strong></span>
+                        <span>Espera desembolso: <strong className="text-navy font-black">{item.daysInProcess} días</strong></span>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="p-4 text-xs text-slate-500">No hay cuentas de cobro o facturas estancadas en trámite.</p>
+                  <p className="p-4 text-xs text-slate-500">No hay facturaciones ni hitos en trámite de desembolso.</p>
                 )}
               </div>
             )}

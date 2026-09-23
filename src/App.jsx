@@ -52,7 +52,7 @@ export function App() {
     );
   }, [currentPortfolio.projects]);
 
-  // Total active alerts in current portfolio (CREG + FPO + Facturación Estancada + Equipment bottlenecks)
+  // Total active alerts in current portfolio (CREG + FPO + Facturación en Trámite + Equipment bottlenecks)
   const totalAlerts = useMemo(() => {
     const projects = currentPortfolio.projects || [];
     const cregCount = projects
