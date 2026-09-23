@@ -51,11 +51,6 @@ function generateProjectUnresolvedText(projectName, projectManager, portfolioNam
     month: "long",
     day: "numeric"
   });
-  const hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-  const formattedHours = hours % 12 || 12;
-  const timeFormatted = `${formattedHours}:${minutes} ${ampm}`;
 
   // Count active items (excluding completed/resueltas)
   const activeItems = (items || []).filter((i) => !isCommentCompleted(i));
@@ -64,7 +59,7 @@ function generateProjectUnresolvedText(projectName, projectManager, portfolioNam
   text += `Portafolio: ${portfolioName || "Portafolio Activo"}\n`;
   text += `Proyecto: ${projectName}\n`;
   text += `Ing. de proyecto: ${projectManager || "Sin asignar"}\n`;
-  text += `Fecha de corte: ${dateFormatted}, ${timeFormatted}\n`;
+  text += `Fecha de corte: ${dateFormatted}\n`;
   text += `Total novedades activas: ${activeItems.length}\n`;
   text += `${"═".repeat(50)}\n\n`;
 
@@ -74,7 +69,7 @@ function generateProjectUnresolvedText(projectName, projectManager, portfolioNam
   }
 
   activeItems.forEach((item, index) => {
-    text += `📌 ${index + 1}. [${item.restriccion || "General"}] — Estado: ${item.estado || "Activa"}\n`;
+    text += `📌 ${index + 1}. [${item.restriccion || "General"}] — Estado: ${item.estado || "En curso"}\n`;
     text += `   • Responsable: ${item.responsable || "PMO Team"}\n`;
     text += `   • Comentario: ${item.comentario || item.texto || "—"}\n`;
     if (item.notas) {
@@ -83,10 +78,9 @@ function generateProjectUnresolvedText(projectName, projectManager, portfolioNam
     if (item.respuesta) {
       text += `   • Plan de acción / Respuesta: ${item.respuesta}\n`;
     }
-    text += `\n${"─".repeat(40)}\n\n`;
+    text += `\n`;
   });
 
-  text += `Generado automáticamente por el Sistema PMO.\n`;
   return text;
 }
 
@@ -100,11 +94,6 @@ function generateConsolidatedUnresolvedText(items, portfolioTitle) {
     month: "long",
     day: "numeric"
   });
-  const hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-  const formattedHours = hours % 12 || 12;
-  const timeFormatted = `${formattedHours}:${minutes} ${ampm}`;
 
   const activeItems = (items || []).filter((i) => !isCommentCompleted(i));
 
@@ -112,7 +101,7 @@ function generateConsolidatedUnresolvedText(items, portfolioTitle) {
   if (portfolioTitle) {
     text += `Portafolio: ${portfolioTitle}\n`;
   }
-  text += `Fecha de corte: ${dateFormatted}, ${timeFormatted}\n`;
+  text += `Fecha de corte: ${dateFormatted}\n`;
   text += `Total novedades activas: ${activeItems.length}\n`;
   text += `${"═".repeat(50)}\n\n`;
 
@@ -137,10 +126,9 @@ function generateConsolidatedUnresolvedText(items, portfolioTitle) {
   Object.entries(grouped).forEach(([projName, projData]) => {
     text += `🏢 PROYECTO: ${projName.toUpperCase()}\n`;
     text += `Ing. de proyecto: ${projData.manager}\n`;
-    text += `Novedades activas: ${projData.items.length}\n`;
-    text += `${"─".repeat(45)}\n`;
+    text += `Novedades activas: ${projData.items.length}\n\n`;
     projData.items.forEach((item, index) => {
-      text += `   ${index + 1}. [${item.restriccion || "General"}] — Estado: ${item.estado || "Activa"}\n`;
+      text += `   ${index + 1}. [${item.restriccion || "General"}] — Estado: ${item.estado || "En curso"}\n`;
       text += `      • Responsable: ${item.responsable || "PMO Team"}\n`;
       text += `      • Comentario: ${item.comentario || item.texto || "—"}\n`;
       if (item.notas) {
@@ -151,10 +139,8 @@ function generateConsolidatedUnresolvedText(items, portfolioTitle) {
       }
       text += `\n`;
     });
-    text += `\n`;
   });
 
-  text += `Generado automáticamente por el Sistema PMO.\n`;
   return text;
 }
 

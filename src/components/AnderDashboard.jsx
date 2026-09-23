@@ -425,7 +425,7 @@ export const AnderDashboard = memo(function AnderDashboard({
                 <th className="py-3 px-3 text-right">Avance Prog.</th>
                 <th className="py-3 px-3 text-center">GAP</th>
                 <th className="py-3 px-3 text-center">Conexión Red</th>
-                <th className="py-3 px-3 text-center">Efectividad Cobro</th>
+                <th className="py-3 px-3 text-center">% Cobrado</th>
                 <th className="py-3 px-3 text-center">Diagnóstico</th>
                 <th className="py-3 px-3 text-center">Acción</th>
               </tr>

@@ -121,11 +121,10 @@ export const RESTRICTION_CATEGORIES = [
 ];
 
 export const RESTRICTION_STATUSES = [
-  "Activa",
-  "Completada",
   "En curso",
   "En revisión",
-  "Pendiente"
+  "Pendiente",
+  "Completada"
 ];
 
 /**
@@ -144,9 +143,11 @@ export function normalizeComments(commentsData, projectId = "") {
   if (!Array.isArray(commentsData)) return [];
   return commentsData.map((c) => {
     const textContent = c.comentario || c.texto || "";
-    let rawEstado = c.estado ? String(c.estado).trim() : "Activa";
+    let rawEstado = c.estado ? String(c.estado).trim() : "En curso";
     if (rawEstado.toLowerCase() === "resuelto" || rawEstado.toLowerCase() === "cerrado") {
       rawEstado = "Completada";
+    } else if (rawEstado.toLowerCase() === "activa" || rawEstado.toLowerCase() === "activo") {
+      rawEstado = "En curso";
     }
     return {
       id: c.id || `cmt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,

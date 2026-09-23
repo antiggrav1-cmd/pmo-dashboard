@@ -255,20 +255,27 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
         {/* % Recaudo / Cobranza */}
         <div className="glass-card glass-glow card-hover p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-navy">Efectividad de Cobro</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-navy">% Cobrado</span>
             <TrendingUp className="w-4 h-4 text-lemony-dark" />
           </div>
           <div className="mt-2">
             <span className="text-2xl font-black text-navy">
               <CountUpNumber 
-                value={totalCop + totalUsd > 0
-                  ? Math.round(((totalCobradoCop + totalCobradoUsd * 4000) / (totalCop + totalUsd * 4000)) * 100)
-                  : 100} 
+                value={(() => {
+                  const trm = Number(currentProject?.trmProyecto) || 4000;
+                  const totalEquiv = totalCop + totalUsd * trm;
+                  const cobradoEquiv = totalCobradoCop + totalCobradoUsd * trm;
+                  return totalEquiv > 0 ? Math.round((cobradoEquiv / totalEquiv) * 100) : 100;
+                })()} 
                 suffix="%" 
               />
             </span>
             <span className="text-[11px] text-slate-500 block mt-0.5">
-              Hitos cobrados vs programados
+              {totalCop > 0 && totalUsd > 0 ? (
+                `COP: ${Math.round((totalCobradoCop / totalCop) * 100)}% | USD: ${Math.round((totalCobradoUsd / totalUsd) * 100)}%`
+              ) : (
+                "Hitos cobrados vs programados"
+              )}
             </span>
           </div>
         </div>

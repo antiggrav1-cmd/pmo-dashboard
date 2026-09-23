@@ -3,8 +3,7 @@ import { CalendarClock, AlertTriangle, Zap, DollarSign } from "lucide-react";
 import { 
   getPortfolioMetrics, 
   getPortfolioFinancials, 
-  formatDate, 
-  formatCurrencyUsd 
+  formatDate 
 } from "../utils/calculations";
 import { CountUpNumber } from "./CountUpNumber";
 import { TargetProgressBar } from "./TargetProgressBar";
@@ -54,8 +53,8 @@ export const DashboardOverview = memo(function DashboardOverview({
 
   return (
     <div className="space-y-5 mb-6">
-      {/* 3 Executive KPI Cards with Glass Glow: Avance -> Recaudo -> Salud Operativa (Cronograma & Conexión) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
+      {/* 4 Executive KPI Cards: Avance -> Facturación COP -> Facturación USD -> Salud Operativa */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
         {/* Card 1: Avance General & GAP */}
         <div className="glass-card glass-glow card-hover min-w-0 min-h-[196px] p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-start justify-between gap-3">
@@ -123,17 +122,20 @@ export const DashboardOverview = memo(function DashboardOverview({
           </div>
         </div>
 
-        {/* Card 2: Recaudo (Facturación & Recaudo) */}
+        {/* Card 2: Facturación & Recaudo COP */}
         <div className="glass-card glass-glow card-hover min-w-0 min-h-[196px] p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-1.5">
               <DollarSign className="w-4 h-4 text-emerald-600" />
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                Facturación &amp; Recaudo
+                Facturación COP
               </span>
             </div>
-            <span className="shrink-0 text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full border border-blue-200">
-              <CountUpNumber value={financials.effectiveness} suffix="% Cobrado" />
+            <span className="shrink-0 text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
+              <CountUpNumber 
+                value={financials.totalCop > 0 ? Math.round((financials.cobradoCop / financials.totalCop) * 100) : 100} 
+                suffix="% Cobrado" 
+              />
             </span>
           </div>
 
@@ -162,18 +164,56 @@ export const DashboardOverview = memo(function DashboardOverview({
                 <CountUpNumber value={financials.porCobrarCop} format="cop" />
               </span>
             </div>
-            {financials.totalUsd > 0 && (
-              <div className="text-[10px] text-blue-700 font-semibold pt-1 border-t border-slate-100 flex justify-between">
-                <span>USD Cobrado: {formatCurrencyUsd(financials.cobradoUsd)}</span>
-                {financials.enTramiteUsd > 0 && <span>| Trámite: {formatCurrencyUsd(financials.enTramiteUsd)}</span>}
-                <span className="text-slate-400">/ {formatCurrencyUsd(financials.totalUsd)}</span>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Card 3: Estado del Cronograma & Conexión a la Red (Optimized Dual Panel) */}
-        <div className={`glass-card glass-glow card-hover min-w-0 min-h-[196px] p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between border md:col-span-2 xl:col-span-1 ${
+        {/* Card 3: Facturación & Recaudo USD */}
+        <div className="glass-card glass-glow card-hover min-w-0 min-h-[196px] p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <DollarSign className="w-4 h-4 text-blue-600" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                Facturación USD
+              </span>
+            </div>
+            <span className="shrink-0 text-xs font-black text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full border border-blue-200">
+              <CountUpNumber 
+                value={financials.totalUsd > 0 ? Math.round((financials.cobradoUsd / financials.totalUsd) * 100) : 100} 
+                suffix="% Cobrado" 
+              />
+            </span>
+          </div>
+
+          <div className="mt-3 space-y-1.5 min-w-0">
+            <div className="space-y-0.5">
+              <span className="text-[11px] font-bold text-slate-400 block">Total portafolio</span>
+              <span className="text-lg font-black text-blue-900 block break-words leading-tight">
+                <CountUpNumber value={financials.totalUsd} format="usd" />
+              </span>
+            </div>
+            <div className="flex justify-between gap-2 items-baseline">
+              <span className="text-[11px] font-bold text-emerald-700">Recaudado:</span>
+              <span className="text-xs font-black text-emerald-700 text-right break-all">
+                <CountUpNumber value={financials.cobradoUsd} format="usd" />
+              </span>
+            </div>
+            <div className="flex justify-between gap-2 items-baseline">
+              <span className="text-[11px] font-bold text-cyan-700">En trámite:</span>
+              <span className="text-xs font-black text-cyan-700 text-right break-all">
+                <CountUpNumber value={financials.enTramiteUsd} format="usd" />
+              </span>
+            </div>
+            <div className="flex justify-between gap-2 items-baseline">
+              <span className="text-[11px] font-bold text-amber-700">Por cobrar:</span>
+              <span className="text-xs font-black text-amber-700 text-right break-all">
+                <CountUpNumber value={financials.porCobrarUsd} format="usd" />
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Estado del Cronograma & Conexión a la Red (Optimized Dual Panel) */}
+        <div className={`glass-card glass-glow card-hover min-w-0 min-h-[196px] p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between border ${
           (metrics.cregCriticalCount > 0 || metrics.criticalCount > 0) ? "border-rose-200 bg-rose-50/15" : ""
         }`}>
           <div className="grid grid-cols-2 gap-3 divide-x divide-slate-200/80 h-full">
