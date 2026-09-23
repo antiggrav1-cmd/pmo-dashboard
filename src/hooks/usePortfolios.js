@@ -31,9 +31,12 @@ export function usePortfolios() {
           hasLoadedFromCloudRef.current = true;
           if (cloudData && cloudData.length > 0) {
             setPortfolios(cloudData);
-            if (!activePortfolioId || !cloudData.some((p) => p.id === activePortfolioId)) {
-              setActivePortfolioId(cloudData[0]?.id || "");
-            }
+            setActivePortfolioId((prevId) => {
+              if (!prevId || !cloudData.some((p) => p.id === prevId)) {
+                return cloudData[0]?.id || "";
+              }
+              return prevId;
+            });
           }
           setSyncStatus("connected");
         }

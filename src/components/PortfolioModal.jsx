@@ -1,31 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { X, FolderPlus, Check, UserCheck } from "lucide-react";
 
-export function PortfolioModal({ isOpen, portfolio, onSave, onClose }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    code: "",
-    atc: "",
-    description: ""
-  });
-
-  useEffect(() => {
-    if (portfolio) {
-      setFormData({
-        name: portfolio.name || "",
-        code: portfolio.code || "",
-        atc: portfolio.atc || "",
-        description: portfolio.description || ""
-      });
-    } else {
-      setFormData({
-        name: "",
-        code: `PORT-${Math.floor(10 + Math.random() * 90)}`,
-        atc: "",
-        description: ""
-      });
+const initPortfolioForm = (portfolio) => portfolio
+  ? {
+      name: portfolio.name || "",
+      code: portfolio.code || "",
+      atc: portfolio.atc || "",
+      description: portfolio.description || ""
     }
-  }, [portfolio, isOpen]);
+  : {
+      name: "",
+      code: `PORT-${Math.floor(10 + Math.random() * 90)}`,
+      atc: "",
+      description: ""
+    };
+
+export function PortfolioModal({ isOpen, portfolio, onSave, onClose }) {
+  const [prevPortfolio, setPrevPortfolio] = useState(portfolio);
+  const [formData, setFormData] = useState(() => initPortfolioForm(portfolio));
+
+  // Derived state pattern: sync form when portfolio prop changes (replaces useEffect)
+  if (portfolio !== prevPortfolio) {
+    setPrevPortfolio(portfolio);
+    setFormData(initPortfolioForm(portfolio));
+  }
 
   if (!isOpen) return null;
 

@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect } from "react";
+import React, { memo, useState } from "react";
 import { 
   X, 
   Save, 
@@ -37,42 +37,31 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
   onSave,
   onClose
 }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    xm: "",
-    operadorRed: "",
-    manager: "",
-    residenteCivil: "",
-    residenteElectrico: "",
-    connectionState: "Ingeniería",
-    capexCop: 0,
-    capexUsd: 0,
-    bacCOP: 0,
-    bacUSD: 0,
-    trmProyecto: 0
+  const initFormData = (p) => ({
+    name: p?.name || "",
+    xm: p?.xm || "",
+    operadorRed: p?.operadorRed || p?.operator || "",
+    manager: p?.manager || "",
+    residenteCivil: p?.residenteCivil || "",
+    residenteElectrico: p?.residenteElectrico || "",
+    connectionState: p?.connectionState || "Ingeniería",
+    capexCop: Number(p?.capexCop) || 0,
+    capexUsd: Number(p?.capexUsd) || 0,
+    bacCOP: Number(p?.bacCOP) || 0,
+    bacUSD: Number(p?.bacUSD) || 0,
+    trmProyecto: Number(p?.trmProyecto) || 0
   });
 
+  const [prevProject, setPrevProject] = useState(project);
+  const [formData, setFormData] = useState(() => initFormData(project));
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  useEffect(() => {
-    if (project) {
-      setFormData({
-        name: project.name || "",
-        xm: project.xm || "",
-        operadorRed: project.operadorRed || project.operator || "",
-        manager: project.manager || "",
-        residenteCivil: project.residenteCivil || "",
-        residenteElectrico: project.residenteElectrico || "",
-        connectionState: project.connectionState || "Ingeniería",
-        capexCop: Number(project.capexCop) || 0,
-        capexUsd: Number(project.capexUsd) || 0,
-        bacCOP: Number(project.bacCOP) || 0,
-        bacUSD: Number(project.bacUSD) || 0,
-        trmProyecto: Number(project.trmProyecto) || 0
-      });
-      setSavedSuccess(false);
-    }
-  }, [project, isOpen]);
+  // Derived state pattern: sync form when project prop changes (replaces useEffect)
+  if (project !== prevProject) {
+    setPrevProject(project);
+    setFormData(initFormData(project));
+    if (savedSuccess) setSavedSuccess(false);
+  }
 
   if (!isOpen || !project) return null;
 

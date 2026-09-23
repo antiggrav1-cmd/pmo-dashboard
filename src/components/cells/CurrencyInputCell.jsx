@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, memo } from "react";
 import { formatCurrencyCop, formatCurrencyUsd } from "../../utils/calculations";
 
 export const CurrencyInputCell = memo(function CurrencyInputCell({
@@ -11,11 +11,15 @@ export const CurrencyInputCell = memo(function CurrencyInputCell({
   const [localVal, setLocalVal] = useState(value !== undefined && value !== null && value !== 0 ? String(value) : "");
   const [isSaved, setIsSaved] = useState(false);
 
-  useEffect(() => {
+  const [prevValue, setPrevValue] = useState(value);
+
+  // Derive state during render when value prop changes externally (replaces useEffect)
+  if (value !== prevValue) {
+    setPrevValue(value);
     if (!isFocused) {
       setLocalVal(value !== undefined && value !== null && value !== 0 ? String(value) : "");
     }
-  }, [value, isFocused]);
+  }
 
   const handleBlur = () => {
     setIsFocused(false);

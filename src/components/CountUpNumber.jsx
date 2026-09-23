@@ -15,12 +15,13 @@ export const CountUpNumber = memo(function CountUpNumber({
   className = ""
 }) {
   const [displayValue, setDisplayValue] = useState(0);
+  const displayValueRef = useRef(0);
   const reqIdRef = useRef(null);
 
   const target = typeof value === "number" ? value : Number(value) || 0;
 
   useEffect(() => {
-    const start = displayValue;
+    const start = displayValueRef.current;
     const end = target;
     const change = end - start;
 
@@ -35,11 +36,13 @@ export const CountUpNumber = memo(function CountUpNumber({
       const easedProgress = easeOutCubic(progress);
       const current = start + change * easedProgress;
 
+      displayValueRef.current = current;
       setDisplayValue(current);
 
       if (progress < 1) {
         reqIdRef.current = requestAnimationFrame(step);
       } else {
+        displayValueRef.current = end;
         setDisplayValue(end);
       }
     };
