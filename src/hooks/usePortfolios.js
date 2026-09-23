@@ -16,7 +16,7 @@ export function usePortfolios() {
   // 1. Initial Cloud Sync on Mount
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) {
-      setSyncStatus("local");
+      // syncStatus already initialized to "local" in useState — just set the ref
       hasLoadedFromCloudRef.current = true;
       return;
     }

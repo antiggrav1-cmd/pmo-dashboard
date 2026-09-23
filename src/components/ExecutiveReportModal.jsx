@@ -27,7 +27,7 @@ import {
 import { getProjectBudgetMetrics } from "../utils/budgetCalculations";
 import { EQUIPMENT_TYPES } from "../utils/equipmentConstants";
 import { getAllPortfolioBottlenecks } from "../services/equipmentService";
-import { RESTRICTION_STYLES, STATUS_STYLES } from "./CommentsView";
+import { RESTRICTION_STYLES, STATUS_STYLES } from "../constants/commentStyles";
 import { TargetProgressBar } from "./TargetProgressBar";
 
 const formatDateTime = (val) => {

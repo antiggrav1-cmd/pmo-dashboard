@@ -165,7 +165,7 @@ export const Sidebar = memo(function Sidebar({
         {/* Render ATC Groups */}
         {Object.entries(groupedByAtc).map(([atcName, atcPortfolios]) => {
           const isAtcCollapsed = Boolean(collapsedAtcs[atcName]);
-          const totalAtcProjects = atcPortfolios.reduce((acc, p) => acc + (p.projects || []).length, 0);
+          const _totalAtcProjects = atcPortfolios.reduce((acc, p) => acc + (p.projects || []).length, 0);
 
           return (
             <div key={atcName} className="space-y-1">

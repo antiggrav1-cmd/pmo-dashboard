@@ -11,7 +11,7 @@ import { TargetProgressBar } from "./TargetProgressBar";
 
 export const DashboardOverview = memo(function DashboardOverview({
   projects = [],
-  portfolioTitle = ""
+  portfolioTitle: _portfolioTitle = ""
 }) {
   const [progressSort, setProgressSort] = useState("desc");
   const metrics = useMemo(() => getPortfolioMetrics(projects), [projects]);
