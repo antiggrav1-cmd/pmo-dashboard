@@ -74,10 +74,13 @@ export function generatePortfolioScheduleSummaryText(projects = [], portfolioNam
     let itemText = `${idx + 1}. ${p.name || "Proyecto"} ${emoji} [${status}]\n`;
     itemText += `   • Avance: ${real}% Real vs ${sched}% Prog. (GAP: ${gapStr})\n`;
     itemText += `   • Tendencia: ${trendStr}\n`;
-    if (p.connectionState || p.fpo) {
+    if (p.connectionState || p.fpo || (p.notes && p.notes.trim())) {
       itemText += `   • Conexión Red: ${p.connectionState || "Ingeniería"}`;
       if (p.fpo) itemText += ` | Fecha FPO: ${formatDate(p.fpo)}`;
       itemText += `\n`;
+      if (p.notes && p.notes.trim()) {
+        itemText += `   • Apreciación: ${p.notes.trim()}\n`;
+      }
     }
 
     return itemText;
@@ -185,6 +188,9 @@ export function generateSingleProjectScheduleText(project = {}, portfolioName = 
   text += `📌 HITOS DE CONEXIÓN:\n`;
   text += `• Conexión a Red: ${project.connectionState || "Ingeniería"}\n`;
   if (project.fpo) text += `• Fecha FPO: ${formatDate(project.fpo)}\n`;
+  if (project.notes && project.notes.trim()) {
+    text += `• Apreciación: ${project.notes.trim()}\n`;
+  }
   text += `\n`;
 
   text += `💡 DIAGNÓSTICO:\n`;
