@@ -325,6 +325,7 @@ export function App() {
           {activeTab === "projects" && (
             <ProjectTable
               projects={currentPortfolio.projects || []}
+              portfolioName={currentPortfolio.name || ""}
               searchTerm={searchTerm}
               statusFilter={statusFilter}
               onUpdateProject={updateProject}

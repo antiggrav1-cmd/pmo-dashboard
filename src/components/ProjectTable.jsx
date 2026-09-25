@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useState, useCallback } from "react";
 import { 
   ArrowUpDown, 
   ArrowUp, 
@@ -6,11 +6,19 @@ import {
   Calendar, 
   Plus,
   X,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Copy,
+  Check,
+  Download,
+  FileDown
 } from "lucide-react";
 import { ProjectRow } from "./ProjectRow";
 import { useTableSort } from "../hooks/useTableSort";
 import { calculateGap, determineStatus } from "../utils/calculations";
+import { 
+  generatePortfolioScheduleSummaryText, 
+  generateSingleProjectScheduleText 
+} from "../utils/scheduleReportService";
 
 const SORT_LABELS = {
   xm: "Archivo XM",
@@ -27,6 +35,7 @@ const SORT_LABELS = {
 
 export const ProjectTable = memo(function ProjectTable({
   projects = [],
+  portfolioName = "",
   searchTerm = "",
   statusFilter = "ALL",
   onUpdateProject,
@@ -34,6 +43,56 @@ export const ProjectTable = memo(function ProjectTable({
   onAddProject,
   onOpenProjectDetail
 }) {
+  const [copiedGeneral, setCopiedGeneral] = useState(false);
+
+  // Copy full consolidated summary report for chat
+  const handleCopyConsolidatedReport = useCallback(async () => {
+    const text = generatePortfolioScheduleSummaryText(projects, portfolioName);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedGeneral(true);
+      setTimeout(() => setCopiedGeneral(false), 2500);
+    } catch (err) {
+      console.error("Error al copiar resumen general:", err);
+    }
+  }, [projects, portfolioName]);
+
+  // Download consolidated report TXT
+  const handleDownloadConsolidatedTxt = useCallback(() => {
+    const text = generatePortfolioScheduleSummaryText(projects, portfolioName);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safeName = (portfolioName || "Portafolio").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const nowStr = new Date().toISOString().slice(0, 10);
+    a.download = `Resumen_Cronograma_${safeName}_${nowStr}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [projects, portfolioName]);
+
+  // Download individual report TXT for each project
+  const handleDownloadAllProjectsIndividual = useCallback(() => {
+    if (projects.length === 0) return;
+    projects.forEach((proj, idx) => {
+      setTimeout(() => {
+        const text = generateSingleProjectScheduleText(proj, portfolioName);
+        const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const safeName = (proj.name || `Proyecto_${idx + 1}`).replace(/[^a-zA-Z0-9_-]/g, "_");
+        const nowStr = new Date().toISOString().slice(0, 10);
+        a.download = `Avance_${safeName}_${nowStr}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, idx * 200);
+    });
+  }, [projects, portfolioName]);
   const activeSearch = searchTerm;
   const activeStatus = statusFilter;
 
@@ -107,6 +166,83 @@ export const ProjectTable = memo(function ProjectTable({
 
   return (
     <div className="glass-card rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col transition-all">
+      {/* Executive Schedule Share & Action Toolbar */}
+      <div className="p-3.5 bg-white border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-navy animate-pulse" />
+          <h2 className="text-xs font-black uppercase tracking-wider text-navy">
+            Control de Cronograma y Avances
+          </h2>
+          {portfolioName && (
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+              {portfolioName}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Copy Consolidated Flash Report for WhatsApp/Teams */}
+          <button
+            type="button"
+            onClick={handleCopyConsolidatedReport}
+            disabled={projects.length === 0}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+              copiedGeneral
+                ? "bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs"
+                : projects.length > 0
+                ? "bg-navy text-lemony hover:bg-navy-dark shadow-xs card-hover"
+                : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+            }`}
+            title="Copiar resumen ejecutivo del portafolio con comparativa de todos los proyectos y conclusiones del PMO"
+          >
+            {copiedGeneral ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-700 font-black">¡Resumen Copiado para Chat!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-lemony" />
+                <span>Copiar Resumen General</span>
+              </>
+            )}
+          </button>
+
+          {/* Download Consolidated TXT */}
+          <button
+            type="button"
+            onClick={handleDownloadConsolidatedTxt}
+            disabled={projects.length === 0}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+              projects.length > 0
+                ? "bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-2xs card-hover"
+                : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+            }`}
+            title="Descargar informe consolidado de cronograma en archivo .txt"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Descargar .TXT General</span>
+          </button>
+
+          {/* Download Individual TXT per Project */}
+          <button
+            type="button"
+            onClick={handleDownloadAllProjectsIndividual}
+            disabled={projects.length === 0}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+              projects.length > 0
+                ? "bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-2xs card-hover"
+                : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+            }`}
+            title="Descarga 1 archivo .txt individual e independiente por cada proyecto"
+          >
+            <FileDown className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden sm:inline">Descargar .TXT (1 por proyecto)</span>
+            <span className="sm:hidden">1 por proyecto</span>
+          </button>
+        </div>
+      </div>
+
       {/* Active Sort Bar (Visible when sorting is applied) */}
       {sortField && (
         <div className="bg-navy-dark/95 border-b border-navy-light px-4 py-2 flex items-center justify-between text-xs text-white">
@@ -224,8 +360,8 @@ export const ProjectTable = memo(function ProjectTable({
                 </div>
               </th>
 
-              {/* Acción: 40px */}
-              <th className="py-3 px-1.5 text-center w-[40px] text-white">
+              {/* Acción: 70px */}
+              <th className="py-3 px-1.5 text-center w-[70px] text-white">
                 <span>Acción</span>
               </th>
             </tr>
@@ -236,6 +372,7 @@ export const ProjectTable = memo(function ProjectTable({
               <ProjectRow
                 key={project.id}
                 project={project}
+                portfolioName={portfolioName}
                 isEven={idx % 2 === 0}
                 onUpdateProject={onUpdateProject}
                 onDeleteProject={onDeleteProject}
