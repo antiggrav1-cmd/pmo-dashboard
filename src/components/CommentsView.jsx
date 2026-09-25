@@ -19,7 +19,7 @@ import {
   Check,
   FileDown
 } from "lucide-react";
-import { formatDate } from "../utils/calculations";
+import { formatDate, calculateGap } from "../utils/calculations";
 import { RESTRICTION_CATEGORIES, RESTRICTION_STATUSES, isCommentCompleted } from "../models/projectModel";
 
 import { RESTRICTION_STYLES, STATUS_STYLES } from "../constants/commentStyles";
@@ -44,7 +44,7 @@ function formatDateTime(isoString) {
 /**
  * Helper to generate a clean, readable text report for an individual project (WhatsApp, Teams, Slack)
  */
-function generateProjectUnresolvedText(projectName, projectManager, portfolioName, items) {
+function generateProjectUnresolvedText(projectName, projectManager, portfolioName, items, projectData = {}) {
   const now = new Date();
   const dateFormatted = now.toLocaleDateString("es-CO", {
     year: "numeric",
@@ -52,14 +52,18 @@ function generateProjectUnresolvedText(projectName, projectManager, portfolioNam
     day: "numeric"
   });
 
-  // Count active items (excluding completed/resueltas)
   const activeItems = (items || []).filter((i) => !isCommentCompleted(i));
+  const realProgress = Number(projectData?.realProgress ?? 0);
+  const scheduledProgress = Number(projectData?.scheduledProgress ?? 0);
+  const gap = calculateGap(realProgress, scheduledProgress);
+  const gapSign = gap > 0 ? `+${gap}%` : `${gap}%`;
 
   let text = `📋 REPORTE DE NOVEDADES Y OBSERVACIONES\n`;
   text += `Portafolio: ${portfolioName || "Portafolio Activo"}\n`;
   text += `Proyecto: ${projectName}\n`;
   text += `Ing. de proyecto: ${projectManager || "Sin asignar"}\n`;
   text += `Fecha de corte: ${dateFormatted}\n`;
+  text += `📊 Cronograma: ${realProgress}% Real vs ${scheduledProgress}% Esperado (GAP: ${gapSign})\n`;
   text += `Total novedades activas: ${activeItems.length}\n`;
   text += `${"═".repeat(50)}\n\n`;
 
@@ -117,6 +121,8 @@ function generateConsolidatedUnresolvedText(items, portfolioTitle) {
     if (!grouped[pName]) {
       grouped[pName] = {
         manager: item.proyectoManager || "Sin asignar",
+        realProgress: item.proyectoReal ?? (item.rawProject?.realProgress ?? 0),
+        scheduledProgress: item.proyectoSched ?? (item.rawProject?.scheduledProgress ?? 0),
         items: []
       };
     }
@@ -124,8 +130,14 @@ function generateConsolidatedUnresolvedText(items, portfolioTitle) {
   });
 
   Object.entries(grouped).forEach(([projName, projData]) => {
+    const real = Number(projData.realProgress ?? 0);
+    const sched = Number(projData.scheduledProgress ?? 0);
+    const gap = calculateGap(real, sched);
+    const gapSign = gap > 0 ? `+${gap}%` : `${gap}%`;
+
     text += `🏢 PROYECTO: ${projName.toUpperCase()}\n`;
     text += `Ing. de proyecto: ${projData.manager}\n`;
+    text += `📊 Cronograma: ${real}% Real vs ${sched}% Esperado (GAP: ${gapSign})\n`;
     text += `Novedades activas: ${projData.items.length}\n\n`;
     projData.items.forEach((item, index) => {
       text += `   ${index + 1}. [${item.restriccion || "General"}] — Estado: ${item.estado || "En curso"}\n`;
@@ -192,6 +204,8 @@ export const CommentsView = memo(function CommentsView({
           proyectoId: proj.id,
           proyectoNombre: proj.name,
           proyectoManager: proj.manager || "Sin responsable",
+          proyectoReal: Number(proj.realProgress) || 0,
+          proyectoSched: Number(proj.scheduledProgress) || 0,
           rawProject: proj
         });
       });
@@ -235,9 +249,8 @@ export const CommentsView = memo(function CommentsView({
       if (selectedProjectId && item.proyectoId !== selectedProjectId) return false;
       if (selectedCategory !== "TODAS" && item.restriccion !== selectedCategory) return false;
       if (selectedStatus !== "TODOS") {
-        if (selectedStatus === "Activa" && isCommentCompleted(item)) return false;
         if (selectedStatus === "Completada" && !isCommentCompleted(item)) return false;
-        if (selectedStatus !== "Activa" && selectedStatus !== "Completada" && item.estado !== selectedStatus) return false;
+        if (selectedStatus !== "Completada" && item.estado !== selectedStatus) return false;
       }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -285,7 +298,8 @@ export const CommentsView = memo(function CommentsView({
       project.name,
       project.manager,
       portfolioName,
-      items
+      items,
+      project
     );
     const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -306,7 +320,8 @@ export const CommentsView = memo(function CommentsView({
       project.name,
       project.manager,
       portfolioName,
-      items
+      items,
+      project
     );
     try {
       await navigator.clipboard.writeText(textContent);
@@ -374,7 +389,7 @@ export const CommentsView = memo(function CommentsView({
       restriccion: "Suministro",
       comentario: "",
       responsable: localStorage.getItem("pmo_comment_author") || "PMO Team",
-      estado: "Activa",
+      estado: "En curso",
       notas: "",
       respuesta: ""
     });
