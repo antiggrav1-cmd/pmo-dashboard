@@ -74,10 +74,9 @@ export function generatePortfolioScheduleSummaryText(projects = [], portfolioNam
     let itemText = `${idx + 1}. ${p.name || "Proyecto"} ${emoji} [${status}]\n`;
     itemText += `   • Avance: ${real}% Real vs ${sched}% Prog. (GAP: ${gapStr})\n`;
     itemText += `   • Tendencia: ${trendStr}\n`;
-    if (p.connectionState) {
-      itemText += `   • Conexión Red: ${p.connectionState}`;
-      if (p.creg) itemText += ` | Ven. CREG: ${formatDate(p.creg)}`;
-      if (p.fpo) itemText += ` | FPO: ${formatDate(p.fpo)}`;
+    if (p.connectionState || p.fpo) {
+      itemText += `   • Conexión Red: ${p.connectionState || "Ingeniería"}`;
+      if (p.fpo) itemText += ` | Fecha FPO: ${formatDate(p.fpo)}`;
       itemText += `\n`;
     }
 
@@ -103,7 +102,7 @@ export function generatePortfolioScheduleSummaryText(projects = [], portfolioNam
   text += `📌 COMPARATIVA POR PROYECTO:\n\n`;
   text += projectSummaries.join("\n") + "\n";
   text += `${"═".repeat(50)}\n`;
-  text += `💡 CONCLUSIONES Y DIAGNÓSTICO PMO:\n`;
+  text += `💡 CONCLUSIONES Y DIAGNÓSTICO:\n`;
 
   if (criticalCount > 0) {
     const critNames = criticalProjects.map((p) => `${p.name} (${p.gap > 0 ? `+${p.gap}%` : `${p.gap}%`})`).join(", ");
@@ -183,14 +182,12 @@ export function generateSingleProjectScheduleText(project = {}, portfolioName = 
   text += `• Desviación (GAP): ${gapStr}\n`;
   text += `• Tendencia: ${trendStr}\n\n`;
 
-  text += `📌 HITOS Y CONEXIÓN:\n`;
+  text += `📌 HITOS DE CONEXIÓN:\n`;
   text += `• Conexión a Red: ${project.connectionState || "Ingeniería"}\n`;
   if (project.fpo) text += `• Fecha FPO: ${formatDate(project.fpo)}\n`;
-  if (project.cod) text += `• Fecha COD: ${formatDate(project.cod)}\n`;
-  if (project.creg) text += `• Vencimiento CREG: ${formatDate(project.creg)}\n`;
   text += `\n`;
 
-  text += `💡 DIAGNÓSTICO PMO:\n`;
+  text += `💡 DIAGNÓSTICO:\n`;
   if (real >= 100) {
     text += `• Proyecto completado al 100% de ejecución.\n`;
   } else if (gap < -10) {
