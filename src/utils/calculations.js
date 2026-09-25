@@ -18,7 +18,7 @@ export function determineStatus(gap, realProgress = null) {
   const g = parseFloat(gap);
   if (isNaN(g)) return "En tiempo";
   if (g < -15) return "Atrasado Crítico";
-  if (g < -5) return "Rezago Leve";
+  if (g < 0) return "Rezago Leve";
   if (g > 5) return "Adelantado";
   return "En tiempo";
 }
@@ -390,7 +390,7 @@ export function getPortfolioMetrics(projects = []) {
     const s = (proj.status || "").toLowerCase();
     if (s.includes("atrasad") || gap < -15) delayedCount++;
     else if (s.includes("adelantad") || gap > 5) aheadCount++;
-    else if (s.includes("rezago") || (gap < -5 && gap >= -15)) atRiskCount++;
+    else if (s.includes("rezago") || s.includes("riesgo") || (gap < 0 && gap >= -15)) atRiskCount++;
     else onTimeCount++;
 
     if (gap < -25) criticalCount++;

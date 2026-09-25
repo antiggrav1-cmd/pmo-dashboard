@@ -1329,13 +1329,19 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                       <tr key={p.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                         <td className="p-2.5 font-bold text-navy border-r border-slate-200">{p.name}</td>
                         <td className="p-2.5 text-center font-black text-slate-900 border-r border-slate-200">{p.realProgress}%</td>
-                        <td className={`p-2.5 text-center font-bold border-r border-slate-200 ${p.gap < 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                        <td className={`p-2.5 text-center font-bold border-r border-slate-200 ${
+                          p.gap < -15 ? "text-rose-700 font-black" :
+                          p.gap < 0 ? "text-amber-800 font-bold" :
+                          "text-emerald-700"
+                        }`}>
                           {p.gap > 0 ? `+${p.gap}%` : `${p.gap}%`}
                         </td>
                         <td className="p-2.5 text-center border-r border-slate-200">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            (p.status || "").includes("atrasad") ? "bg-rose-100 text-rose-700" :
-                            (p.status || "").includes("riesgo") ? "bg-amber-100 text-amber-800" :
+                            (p.status || "").toLowerCase().includes("atrasad") ? "bg-rose-100 text-rose-700" :
+                            (p.status || "").toLowerCase().includes("riesgo") || (p.status || "").toLowerCase().includes("rezago") ? "bg-amber-100 text-amber-800" :
+                            (p.status || "").toLowerCase().includes("completad") ? "bg-purple-100 text-purple-700" :
+                            (p.status || "").toLowerCase().includes("adelantad") ? "bg-blue-100 text-blue-700" :
                             "bg-emerald-100 text-emerald-800"
                           }`}>
                             {p.status || "En tiempo"}
