@@ -38,8 +38,8 @@ export function useProjectFilter(projects = []) {
       if (statusFilter !== "ALL") {
         const s = (proj.status || "").toLowerCase();
         const g = Number(proj.gap) || 0;
-        if (statusFilter === "Atrasado") matchStatus = s.includes("atrasad") || g < -15;
-        else if (statusFilter === "En riesgo") matchStatus = s.includes("riesgo") || s.includes("rezago") || (g < 0 && g >= -15);
+        if (statusFilter === "Atrasado") matchStatus = s.includes("atrasad") || g < -10;
+        else if (statusFilter === "En riesgo") matchStatus = s.includes("riesgo") || s.includes("rezago") || (g < 0 && g >= -10);
         else if (statusFilter === "En tiempo") matchStatus = s.includes("tiempo") || (g >= 0 && g <= 5);
         else if (statusFilter === "Adelantado") matchStatus = s.includes("adelantad") || g > 5;
         else if (statusFilter === "Completado") matchStatus = s.includes("completad") || Number(proj.realProgress) >= 100;

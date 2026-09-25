@@ -1330,7 +1330,7 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                         <td className="p-2.5 font-bold text-navy border-r border-slate-200">{p.name}</td>
                         <td className="p-2.5 text-center font-black text-slate-900 border-r border-slate-200">{p.realProgress}%</td>
                         <td className={`p-2.5 text-center font-bold border-r border-slate-200 ${
-                          p.gap < -15 ? "text-rose-700 font-black" :
+                          p.gap < -10 ? "text-rose-700 font-black" :
                           p.gap < 0 ? "text-amber-800 font-bold" :
                           "text-emerald-700"
                         }`}>

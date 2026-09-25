@@ -49,8 +49,8 @@ export const ProjectTable = memo(function ProjectTable({
     if (activeStatus !== "ALL") {
       const s = (proj.status || "").toLowerCase();
       const g = Number(proj.gap) || 0;
-      if (activeStatus === "Atrasado") matchStatus = s.includes("atrasad") || g < -15;
-      else if (activeStatus === "En riesgo") matchStatus = s.includes("rezago") || s.includes("riesgo") || (g < 0 && g >= -15);
+      if (activeStatus === "Atrasado") matchStatus = s.includes("atrasad") || g < -10;
+      else if (activeStatus === "En riesgo") matchStatus = s.includes("rezago") || s.includes("riesgo") || (g < 0 && g >= -10);
       else if (activeStatus === "En tiempo") matchStatus = s.includes("tiempo") || (g >= 0 && g <= 5);
       else if (activeStatus === "Adelantado") matchStatus = s.includes("adelantad") || g > 5;
       else if (activeStatus === "Completado") matchStatus = s.includes("completad") || Number(proj.realProgress) >= 100;

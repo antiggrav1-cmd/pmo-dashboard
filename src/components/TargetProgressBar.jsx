@@ -16,7 +16,7 @@ export const TargetProgressBar = memo(function TargetProgressBar({
   const schedNum = Math.max(0, Math.min(100, Number(scheduled) || 0));
   const gap = Number((realNum - schedNum).toFixed(1));
   const isAhead = gap >= 0;
-  const isCriticalLag = gap < -15;
+  const isCriticalLag = gap < -10;
 
   // Determine bar fill styling based on health (Harmonious executive palette)
   const getFillGradient = () => {

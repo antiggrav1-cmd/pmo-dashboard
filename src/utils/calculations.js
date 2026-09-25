@@ -17,7 +17,7 @@ export function determineStatus(gap, realProgress = null) {
   }
   const g = parseFloat(gap);
   if (isNaN(g)) return "En tiempo";
-  if (g < -15) return "Atrasado Crítico";
+  if (g < -10) return "Atrasado Crítico";
   if (g < 0) return "Rezago Leve";
   if (g > 5) return "Adelantado";
   return "En tiempo";
@@ -244,8 +244,8 @@ export function getFpoScheduleRisk(project = {}) {
   const fpoDay = new Date(fpoDate.getFullYear(), fpoDate.getMonth(), fpoDate.getDate());
   const daysLeft = Math.ceil((fpoDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-  // Risk condition: FPO past or GAP critical delay > 15% (gap < -15)
-  const isAtRisk = daysLeft < 0 || gap < -15;
+  // Risk condition: FPO past or GAP critical delay > 10% (gap < -10)
+  const isAtRisk = daysLeft < 0 || gap < -10;
 
   if (isAtRisk) {
     return {
@@ -257,7 +257,7 @@ export function getFpoScheduleRisk(project = {}) {
       scheduledProgress,
       message: daysLeft < 0 
         ? `🔴 Riesgo FPO: Fecha vencida hace ${Math.abs(daysLeft)} días` 
-        : `🔴 Riesgo FPO: Atraso crítico de ${Math.abs(gap)}% (límite > 15%)`
+        : `🔴 Riesgo FPO: Atraso crítico de ${Math.abs(gap)}% (límite > 10%)`
     };
   }
 
@@ -388,9 +388,9 @@ export function getPortfolioMetrics(projects = []) {
     appliedWeight += weight;
 
     const s = (proj.status || "").toLowerCase();
-    if (s.includes("atrasad") || gap < -15) delayedCount++;
+    if (s.includes("atrasad") || gap < -10) delayedCount++;
     else if (s.includes("adelantad") || gap > 5) aheadCount++;
-    else if (s.includes("rezago") || s.includes("riesgo") || (gap < 0 && gap >= -15)) atRiskCount++;
+    else if (s.includes("rezago") || s.includes("riesgo") || (gap < 0 && gap >= -10)) atRiskCount++;
     else onTimeCount++;
 
     if (gap < -25) criticalCount++;

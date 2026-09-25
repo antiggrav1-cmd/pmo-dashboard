@@ -33,8 +33,8 @@ export function GapBadge({ gap, previousGap }) {
   const numGap = parseFloat(gap) || 0;
   const numPrev = parseFloat(previousGap);
 
-  const isSevere = numGap < -15;
-  const isModerate = numGap < 0 && numGap >= -15;
+  const isSevere = numGap < -10;
+  const isModerate = numGap < 0 && numGap >= -10;
 
   let colorClass = "text-emerald-700 bg-emerald-50 border border-emerald-200";
   if (isSevere) {
