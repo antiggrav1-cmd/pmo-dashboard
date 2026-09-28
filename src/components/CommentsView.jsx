@@ -544,21 +544,7 @@ export const CommentsView = memo(function CommentsView({
   return (
     <div className="space-y-5">
       {/* 1. Header KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="glass-card rounded-2xl border border-slate-200/80 p-3.5 flex items-center gap-3 shadow-2xs">
-          <div className="p-2 rounded-xl bg-navy text-lemony shadow-xs">
-            <MessageSquare className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block leading-none">
-              Total Registros
-            </span>
-            <span className="text-lg font-black text-navy leading-tight">
-              {stats.total}
-            </span>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="glass-card rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3.5 flex items-center gap-3 shadow-2xs">
           <div className="p-2 rounded-xl bg-emerald-600 text-white shadow-xs">
             <Clock3 className="w-4 h-4" />
@@ -601,7 +587,7 @@ export const CommentsView = memo(function CommentsView({
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3.5 flex items-center gap-3 shadow-2xs col-span-2 sm:col-span-1">
+        <div className="glass-card rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3.5 flex items-center gap-3 shadow-2xs">
           <div className="p-2 rounded-xl bg-slate-600 text-white shadow-xs">
             <CheckCircle2 className="w-4 h-4" />
           </div>
