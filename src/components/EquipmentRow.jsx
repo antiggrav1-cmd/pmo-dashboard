@@ -51,7 +51,6 @@ export const EquipmentRow = memo(function EquipmentRow({
         <td key={eqType.id} className="p-2 border-r border-slate-200 align-top">
           <EquipmentCell
             equipment={eqData[eqType.id]}
-            defaultBrand={eqType.defaultBrand}
             onChange={(field, value) => handleEquipmentFieldChange(eqType.id, field, value)}
           />
         </td>

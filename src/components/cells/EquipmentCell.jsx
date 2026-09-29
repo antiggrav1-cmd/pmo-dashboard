@@ -5,13 +5,11 @@ import { toInputDateFormat } from "../../utils/calculations";
 
 export const EquipmentCell = memo(function EquipmentCell({
   equipment = {},
-  defaultBrand = "",
   onChange
 }) {
   const status = equipment.status || "Fabricación";
   const edt = equipment.edt || equipment.etd || "";
   const eta = equipment.eta || "";
-  const brand = equipment.brand || "";
 
   return (
     <div className="space-y-1.5 bg-slate-50/80 p-2 rounded-xl border border-slate-200/60 hover:bg-white hover:border-nashville transition-all shadow-2xs">
@@ -49,15 +47,6 @@ export const EquipmentCell = memo(function EquipmentCell({
           className="w-full text-[11px] text-slate-700 text-right bg-transparent focus:outline-none cursor-pointer"
         />
       </div>
-
-      {/* Brand / Model Input */}
-      <input
-        type="text"
-        placeholder={`Marca/Modelo (${defaultBrand.split("/")[0]?.trim() || "Genérico"})...`}
-        value={brand}
-        onChange={(e) => onChange("brand", e.target.value)}
-        className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] text-slate-700 placeholder-slate-400 focus:outline-none focus:border-nashville truncate"
-      />
     </div>
   );
 });
