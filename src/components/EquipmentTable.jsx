@@ -107,54 +107,69 @@ export const EquipmentTable = memo(function EquipmentTable({
     return getFullEquipmentMetrics(projects);
   }, [projects]);
 
+  // Toggle KPI visibility for extra vertical space
+  const [showKpis, setShowKpis] = useState(true);
+  const [showStatusGuide, setShowStatusGuide] = useState(false);
+
   return (
-    <div className="space-y-5">
-      {/* 5 Equipment Summary KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        {equipmentMetrics.map(({ type, summary }) => (
-          <div
-            key={type.id}
-            className="glass-card p-4 rounded-2xl border border-slate-200/80 shadow-xs card-hover flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                {getEquipmentIcon(type.id)}
-                <span className="text-xs font-bold uppercase tracking-wider text-navy">
-                  {type.name}
+    <div className="space-y-3.5">
+      {/* 5 Equipment Summary KPI Cards (Collapsible) */}
+      {showKpis && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 animate-in fade-in duration-200">
+          {equipmentMetrics.map(({ type, summary }) => (
+            <div
+              key={type.id}
+              className="glass-card p-3 rounded-2xl border border-slate-200/80 shadow-xs card-hover flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  {getEquipmentIcon(type.id)}
+                  <span className="text-xs font-bold uppercase tracking-wider text-navy">
+                    {type.name}
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-bold">
+                  {summary.enSitio}/{summary.total}
                 </span>
               </div>
-              <span className="text-[10px] text-slate-400 font-bold">
-                {summary.enSitio}/{summary.total}
-              </span>
-            </div>
 
-            <div className="mt-3">
-              <div className="flex items-center justify-between text-[11px] mb-1">
-                <span className="font-bold text-navy">{summary.enSitio} en sitio</span>
-                {summary.retrasado > 0 ? (
-                  <span className="text-rose-600 font-bold">⚠️ {summary.retrasado}</span>
-                ) : (
-                  <span className="text-slate-400">{summary.enTransito} tránsito</span>
-                )}
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-navy rounded-full transition-all duration-300"
-                  style={{ width: `${summary.percentageOnSite}%` }}
-                ></div>
+              <div className="mt-2">
+                <div className="flex items-center justify-between text-[10.5px] mb-1">
+                  <span className="font-bold text-navy">{summary.enSitio} en sitio</span>
+                  {summary.retrasado > 0 ? (
+                    <span className="text-rose-600 font-bold">⚠️ {summary.retrasado}</span>
+                  ) : (
+                    <span className="text-slate-400">{summary.enTransito} tránsito</span>
+                  )}
+                </div>
+                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-navy rounded-full transition-all duration-300"
+                    style={{ width: `${summary.percentageOnSite}%` }}
+                  ></div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Main Equipment Matrix Table */}
       <div className="glass-card rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col transition-all">
         {/* Table Top Controls */}
-        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-navy">
-            Matriz de Equipos Principales — {portfolioName}
-          </span>
+        <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-navy">
+              Matriz de Equipos Principales — {portfolioName}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowKpis((prev) => !prev)}
+              className="text-[10px] font-bold text-slate-500 hover:text-navy px-2 py-0.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-2xs cursor-pointer"
+            >
+              {showKpis ? "Ocultar KPIs" : "Ver KPIs"}
+            </button>
+          </div>
 
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -239,16 +254,41 @@ export const EquipmentTable = memo(function EquipmentTable({
           </table>
         </div>
 
-        {/* Table Footer Guide */}
-        <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-semibold text-slate-700">Estados disponibles:</span>
-            {EQUIPMENT_STATUS_OPTIONS.map((opt) => (
-              <span key={opt.label} className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600">
-                <span className={`w-2 h-2 rounded-full ${opt.dot}`}></span>
-                <span>{opt.label}</span>
-              </span>
-            ))}
+        {/* Table Compact Footer Guide */}
+        <div className="p-2.5 px-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2 relative">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowStatusGuide((prev) => !prev)}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-navy bg-white hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+            >
+              <span>ℹ️</span>
+              <span>Guía de estados ({EQUIPMENT_STATUS_OPTIONS.length})</span>
+            </button>
+
+            {/* Status Guide Floating Popover */}
+            {showStatusGuide && (
+              <div className="absolute bottom-full left-0 mb-2 w-80 sm:w-96 p-3 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                  <span className="text-xs font-bold text-navy">Estados de equipos disponibles</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowStatusGuide(false)}
+                    className="text-slate-400 hover:text-slate-600 p-0.5 rounded-md hover:bg-slate-100"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto pr-1">
+                  {EQUIPMENT_STATUS_OPTIONS.map((opt) => (
+                    <div key={opt.label} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700 bg-slate-50 p-1 px-1.5 rounded-md">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${opt.dot}`}></span>
+                      <span className="truncate">{opt.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <span className="text-[11px] text-slate-400">

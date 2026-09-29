@@ -113,7 +113,7 @@ export function isEarlySupplyStage(status = "") {
 }
 
 /**
- * Detects logistic bottlenecks crossing equipment ETAs and status against project FPO
+ * Detects logistic bottlenecks crossing equipment ETAs, EDTs, and status against project FPO
  */
 export function detectEquipmentBottlenecks(project = {}) {
   // If project is already delivered/handed over, no equipment bottlenecks apply
@@ -130,8 +130,11 @@ export function detectEquipmentBottlenecks(project = {}) {
 
   EQUIPMENT_TYPES.forEach((eqType) => {
     const item = eqData[eqType.id] || {};
-    const etaStr = item.eta;
+    const etaStr = item.eta || "";
+    const edtStr = item.edt || item.etd || "";
     const status = item.status || "Fabricación";
+    const brand = item.brand || "";
+    const notes = item.notes || "";
     const etaDays = etaStr ? getDaysRemaining(etaStr) : null;
 
     // 1. If equipment has already arrived on site or is installed, it is NOT a bottleneck
@@ -147,7 +150,10 @@ export function detectEquipmentBottlenecks(project = {}) {
         riskLevel: "CRITICAL",
         reason: `Equipo marcado explícitamente en estado "Retrasado"`,
         status,
+        edt: edtStr,
         eta: etaStr,
+        brand,
+        notes,
         fpo: fpoStr
       });
       return;
@@ -161,7 +167,10 @@ export function detectEquipmentBottlenecks(project = {}) {
         riskLevel: "CRITICAL",
         reason: `ETA vencida hace ${Math.abs(etaDays)} días (${formatDate(etaStr)}) y el equipo sigue en "${status}"`,
         status,
+        edt: edtStr,
         eta: etaStr,
+        brand,
+        notes,
         fpo: fpoStr
       });
       return;
@@ -175,7 +184,10 @@ export function detectEquipmentBottlenecks(project = {}) {
         riskLevel: "HIGH",
         reason: `ETA programada en ${etaDays} días pero el equipo aún figura en "${status}"`,
         status,
+        edt: edtStr,
         eta: etaStr,
+        brand,
+        notes,
         fpo: fpoStr
       });
       return;
@@ -192,7 +204,10 @@ export function detectEquipmentBottlenecks(project = {}) {
           riskLevel: "CRITICAL",
           reason: `Llegada estimada ${diffDays} días después de la FPO (${formatDate(etaStr)} vs FPO ${formatDate(fpoStr)})`,
           status,
+          edt: edtStr,
           eta: etaStr,
+          brand,
+          notes,
           fpo: fpoStr
         });
         return;
@@ -207,7 +222,10 @@ export function detectEquipmentBottlenecks(project = {}) {
         riskLevel: "HIGH",
         reason: `Aún en "${status}" a solo ${daysToFpo} días de la FPO del proyecto`,
         status,
+        edt: edtStr,
         eta: etaStr,
+        brand,
+        notes,
         fpo: fpoStr
       });
       return;
@@ -222,14 +240,43 @@ export function detectEquipmentBottlenecks(project = {}) {
         riskLevel: "HIGH",
         reason: `Equipo en "${status}" a solo ${daysToFpo} días de la FPO`,
         status,
+        edt: edtStr,
         eta: etaStr,
+        brand,
+        notes,
+        fpo: fpoStr
+      });
+      return;
+    }
+
+    // 8. Missing ETA or EDT dates in non-delivered equipment
+    if (!etaStr || !edtStr) {
+      let missingReason = "";
+      if (!etaStr && !edtStr) {
+        missingReason = `Equipo en estado "${status}" sin fecha de salida (EDT) ni de llegada (ETA) registrada`;
+      } else if (!etaStr) {
+        missingReason = `Equipo en estado "${status}" sin fecha estimada de llegada (ETA) registrada`;
+      } else {
+        missingReason = `Equipo en estado "${status}" sin fecha estimada de salida/despacho (EDT) registrada`;
+      }
+
+      bottlenecks.push({
+        equipmentId: eqType.id,
+        equipmentName: eqType.name,
+        riskLevel: !etaStr ? "HIGH" : "WARNING",
+        reason: missingReason,
+        status,
+        edt: edtStr,
+        eta: etaStr,
+        brand,
+        notes,
         fpo: fpoStr
       });
       return;
     }
   });
 
-  // 8. Installation dependency conflict: trackers must be installed before panels
+  // 9. Installation dependency conflict: trackers must be installed before panels
   const trackers = eqData.trackers || {};
   const panels = eqData.paneles || {};
   if (isEquipmentInstalled(panels.status || "") && !isEquipmentInstalled(trackers.status || "")) {
@@ -239,7 +286,10 @@ export function detectEquipmentBottlenecks(project = {}) {
       riskLevel: "CRITICAL",
       reason: "Inconsistencia física: Los paneles figuran instalados antes de que los trackers estén instalados",
       status: trackers.status || "Fabricación",
+      edt: trackers.edt || trackers.etd || "",
       eta: trackers.eta || "",
+      brand: trackers.brand || "",
+      notes: trackers.notes || "",
       fpo: fpoStr
     });
   }
@@ -288,6 +338,7 @@ export function getEquipmentProcurementAlerts(projects = []) {
       const isPendienteOC = s.includes("pendiente oc");
 
       if (isNoPedido || isPendienteOC) {
+        const edt = item.edt || item.etd || null;
         alerts.push({
           projectId:     p.id,
           projectName:   p.name,
@@ -295,6 +346,7 @@ export function getEquipmentProcurementAlerts(projects = []) {
           equipmentId:   eqType.id,
           equipmentName: eqType.fullName || eqType.name,
           status,
+          edt:           edt || null,
           eta:           item.eta || null,
           brand:         item.brand || null,
           notes:         item.notes || null,

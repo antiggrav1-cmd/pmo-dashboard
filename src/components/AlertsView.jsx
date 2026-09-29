@@ -39,13 +39,9 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
 
   // Equipment bottlenecks
   const bottlenecks = useMemo(() => getAllPortfolioBottlenecks(projects), [projects]);
-  const totalBottlenecks = useMemo(() => bottlenecks.reduce((total, item) => total + item.bottlenecks.length, 0), [bottlenecks]);
 
   // Procurement alerts: "No pedido" and "Pendiente OC" equipment regardless of ETA/FPO
   const procurementAlerts = useMemo(() => getEquipmentProcurementAlerts(projects), [projects]);
-
-  // Combined equipment alert count
-  const totalEquipmentAlerts = totalBottlenecks + procurementAlerts.length;
 
   // Group all equipment issues (bottlenecks + procurement) by project
   const groupedEquipmentAlerts = useMemo(() => {
@@ -69,7 +65,9 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
           status: b.status,
           riskLevel: b.riskLevel,
           reason: b.reason,
-          eta: b.eta
+          edt: b.edt,
+          eta: b.eta,
+          notes: b.notes
         });
       });
     });
@@ -84,21 +82,29 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
         });
       }
       const entry = map.get(alert.projectId);
-      entry.items.push({
-        type: "procurement",
-        equipmentId: alert.equipmentId,
-        equipmentName: alert.equipmentName,
-        status: alert.status,
-        riskLevel: alert.riskLevel,
-        reason: alert.reason,
-        eta: alert.eta,
-        brand: alert.brand,
-        notes: alert.notes
-      });
+      const alreadyHas = entry.items.some((i) => i.equipmentId === alert.equipmentId);
+      if (!alreadyHas) {
+        entry.items.push({
+          type: "procurement",
+          equipmentId: alert.equipmentId,
+          equipmentName: alert.equipmentName,
+          status: alert.status,
+          riskLevel: alert.riskLevel,
+          reason: alert.reason,
+          edt: alert.edt,
+          eta: alert.eta,
+          notes: alert.notes
+        });
+      }
     });
 
     return Array.from(map.values());
   }, [bottlenecks, procurementAlerts]);
+
+  // Combined equipment alert count
+  const totalEquipmentAlerts = useMemo(() => {
+    return groupedEquipmentAlerts.reduce((total, p) => total + p.items.length, 0);
+  }, [groupedEquipmentAlerts]);
 
   return (
     <div className="space-y-5">
@@ -327,27 +333,60 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
                       </div>
 
                       {/* Lista de equipos pendientes / alertas del proyecto */}
-                      <div className="space-y-1.5 pl-2.5 border-l-2 border-amber-200/80">
+                      <div className="space-y-2 pl-2.5 border-l-2 border-amber-200/80">
                         {proj.items.map((item, idx) => (
-                          <div key={`${item.equipmentId}-${idx}`} className="text-[11px] leading-snug space-y-0.5">
+                          <div key={`${item.equipmentId}-${idx}`} className="text-[11px] leading-snug space-y-1 bg-white/60 p-2 rounded-xl border border-slate-200/50 shadow-2xs">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`text-[9.5px] px-1.5 py-0.2 rounded font-bold ${
+                              <span className={`text-[9.5px] px-2 py-0.5 rounded-full font-bold ${
                                 item.riskLevel === "CRITICAL"
-                                  ? "bg-rose-100 text-rose-700"
-                                  : "bg-amber-100 text-amber-800"
+                                  ? "bg-rose-100 text-rose-700 border border-rose-200"
+                                  : item.riskLevel === "HIGH"
+                                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                  : "bg-amber-50 text-amber-700 border border-amber-200"
                               }`}>
                                 {item.status || item.riskLevel}
                               </span>
                               <strong className="text-navy">{item.equipmentName}:</strong>
                               <span className="text-slate-700">{item.reason}</span>
                             </div>
-                            {(item.eta || item.brand || item.notes) && (
-                              <div className="flex items-center gap-2 text-[10px] text-slate-400 pl-1">
-                                {item.eta && <span>ETA: <strong className="text-slate-600">{formatDate(item.eta)}</strong></span>}
-                                {item.brand && <span>• Marca: <strong className="text-slate-600">{item.brand}</strong></span>}
-                                {item.notes && <span className="italic">• {item.notes}</span>}
-                              </div>
-                            )}
+
+                            {/* Date metadata and explicit EDT / ETA annotations */}
+                            <div className="flex items-center gap-2 text-[10.5px] text-slate-500 pl-0.5 flex-wrap">
+                              {/* EDT annotation */}
+                              {item.edt ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="text-slate-400 font-medium">EDT:</span>
+                                  <strong className="text-slate-700 font-semibold">{formatDate(item.edt)}</strong>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-amber-800 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/80">
+                                  <span>⚠️</span>
+                                  <span>Sin fecha EDT</span>
+                                </span>
+                              )}
+
+                              <span className="text-slate-300">•</span>
+
+                              {/* ETA annotation */}
+                              {item.eta ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="text-slate-400 font-medium">ETA:</span>
+                                  <strong className="text-slate-700 font-semibold">{formatDate(item.eta)}</strong>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-rose-800 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200/80">
+                                  <span>⚠️</span>
+                                  <span>Sin fecha ETA</span>
+                                </span>
+                              )}
+
+                              {item.notes && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <span className="italic text-slate-500 truncate max-w-[260px]" title={item.notes}>“{item.notes}”</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
