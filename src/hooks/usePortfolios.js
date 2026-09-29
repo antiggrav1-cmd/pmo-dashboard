@@ -37,6 +37,21 @@ export function usePortfolios() {
               }
               return prevId;
             });
+          } else {
+            // Supabase table is empty. Check if this browser has local data to automatically seed to Cloud!
+            const localData = portfolioRepository.getAllLocal();
+            if (localData && localData.length > 0) {
+              setPortfolios(localData);
+              setActivePortfolioId((prevId) => {
+                if (!prevId || !localData.some((p) => p.id === prevId)) {
+                  return localData[0]?.id || "";
+                }
+                return prevId;
+              });
+              portfolioRepository.saveAll(localData).catch((err) => {
+                console.error("Error auto-seeding local data to Supabase:", err);
+              });
+            }
           }
           setSyncStatus("connected");
         }

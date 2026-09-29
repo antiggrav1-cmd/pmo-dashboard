@@ -62,8 +62,10 @@ export const portfolioRepository = {
         })
       );
 
-      // Keep localStorage in sync with cloud
-      savePortfolios(normalized);
+      if (normalized.length > 0) {
+        // Keep localStorage in sync with cloud only when cloud has data
+        savePortfolios(normalized);
+      }
       return normalized;
     } catch (e) {
       console.error("Exception fetching portfolios from Supabase:", e);
