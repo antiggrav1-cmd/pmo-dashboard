@@ -229,6 +229,11 @@ const ProjectOnePager = memo(function ProjectOnePager({
             <span className="text-xs font-black text-slate-900 block truncate" title={formatCurrencyCop(financialMetrics.totalCop)}>
               {formatCurrencyCop(financialMetrics.totalCop)}
             </span>
+            {financialMetrics.totalUsd > 0 && (
+              <span className="text-[10px] font-bold text-slate-700 block mt-0.5">
+                {formatCurrencyUsd(financialMetrics.totalUsd)}
+              </span>
+            )}
             <span className="text-[10px] text-blue-700 font-bold block mt-0.5">
               Hitos: {financialMetrics.cobradoCount} / {financialMetrics.totalHitos} cobrados
             </span>
@@ -1002,9 +1007,19 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                     <span className="text-sm font-black text-slate-900 block truncate" title={formatCurrencyCop(financialTotals.totalCop)}>
                       {formatCurrencyCop(financialTotals.totalCop)}
                     </span>
-                    <span className="text-[10px] text-blue-700 font-bold block mt-1">
+                    <span className="text-[10px] text-blue-700 font-bold block mt-0.5">
                       Cobrado: {formatCurrencyCop(financialTotals.cobradoCop)}
                     </span>
+                    {financialTotals.totalUsd > 0 && (
+                      <div className="mt-1.5 pt-1.5 border-t border-slate-200/80">
+                        <span className="text-xs font-black text-slate-900 block truncate" title={formatCurrencyUsd(financialTotals.totalUsd)}>
+                          {formatCurrencyUsd(financialTotals.totalUsd)}
+                        </span>
+                        <span className="text-[10px] text-blue-700 font-bold block mt-0.5">
+                          Cobrado: {formatCurrencyUsd(financialTotals.cobradoUsd)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
