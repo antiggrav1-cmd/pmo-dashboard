@@ -1,4 +1,4 @@
-﻿import * as XLSX from "xlsx";
+import * as XLSX from "xlsx";
 import { calculateGap, determineStatus, formatDate } from "./calculations";
 import { getDefaultEquipment } from "./equipmentConstants";
 
@@ -54,30 +54,35 @@ export function exportToExcel(portfolioOrList, filename = "Reporte_PMO_Proyectos
       const eq = p.equipment || getDefaultEquipment();
       return {
         "Proyecto": p.name || "",
-        "Paneles (Estado)": eq.paneles?.status || "FabricaciÃ³n",
+        "Paneles (Estado)": eq.paneles?.status || "Fabricación",
+        "Paneles EDT": formatDate(eq.paneles?.edt || eq.paneles?.etd),
         "Paneles ETA": formatDate(eq.paneles?.eta),
         "Paneles Marca": eq.paneles?.brand || "",
 
-        "Tracker (Estado)": eq.trackers?.status || "FabricaciÃ³n",
+        "Tracker (Estado)": eq.trackers?.status || "Fabricación",
+        "Tracker EDT": formatDate(eq.trackers?.edt || eq.trackers?.etd),
         "Tracker ETA": formatDate(eq.trackers?.eta),
         "Tracker Marca": eq.trackers?.brand || "",
 
-        "Shelter (Estado)": eq.shelter?.status || "FabricaciÃ³n",
+        "Shelter (Estado)": eq.shelter?.status || "Fabricación",
+        "Shelter EDT": formatDate(eq.shelter?.edt || eq.shelter?.etd),
         "Shelter ETA": formatDate(eq.shelter?.eta),
         "Shelter Marca": eq.shelter?.brand || "",
 
-        "Inversores (Estado)": eq.inversores?.status || "FabricaciÃ³n",
+        "Inversores (Estado)": eq.inversores?.status || "Fabricación",
+        "Inversores EDT": formatDate(eq.inversores?.edt || eq.inversores?.etd),
         "Inversores ETA": formatDate(eq.inversores?.eta),
         "Inversores Marca": eq.inversores?.brand || "",
 
-        "Reconectador (Estado)": eq.reconectador?.status || "FabricaciÃ³n",
+        "Reconectador (Estado)": eq.reconectador?.status || "Fabricación",
+        "Reconectador EDT": formatDate(eq.reconectador?.edt || eq.reconectador?.etd),
         "Reconectador ETA": formatDate(eq.reconectador?.eta),
         "Reconectador Marca": eq.reconectador?.brand || "",
       };
     });
 
     const wsEquipment = XLSX.utils.json_to_sheet(equipmentRows);
-    wsEquipment["!cols"] = Array(16).fill({ wch: 18 });
+    wsEquipment["!cols"] = Array(21).fill({ wch: 18 });
     XLSX.utils.book_append_sheet(wb, wsEquipment, equipmentName);
   });
 

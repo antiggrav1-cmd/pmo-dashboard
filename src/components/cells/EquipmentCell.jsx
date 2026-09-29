@@ -9,6 +9,7 @@ export const EquipmentCell = memo(function EquipmentCell({
   onChange
 }) {
   const status = equipment.status || "Fabricación";
+  const edt = equipment.edt || equipment.etd || "";
   const eta = equipment.eta || "";
   const brand = equipment.brand || "";
 
@@ -27,8 +28,19 @@ export const EquipmentCell = memo(function EquipmentCell({
         ))}
       </select>
 
+      {/* EDT Date Input */}
+      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-0.5" title="Fecha Estimada de Salida / Despacho (EDT)">
+        <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0">EDT:</span>
+        <input
+          type="date"
+          value={toInputDateFormat(edt)}
+          onChange={(e) => onChange("edt", e.target.value)}
+          className="w-full text-[11px] text-slate-700 text-right bg-transparent focus:outline-none cursor-pointer"
+        />
+      </div>
+
       {/* ETA Date Input */}
-      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-0.5">
+      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-0.5" title="Fecha Estimada de Llegada a Sitio (ETA)">
         <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0">ETA:</span>
         <input
           type="date"

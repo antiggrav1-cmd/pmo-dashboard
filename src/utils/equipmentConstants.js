@@ -55,10 +55,10 @@ export const EQUIPMENT_STATUS_OPTIONS = [
 
 export function getDefaultEquipment() {
   return {
-    paneles:      { status: "Fabricación", progress: 0, eta: "", brand: "", notes: "" },
-    trackers:     { status: "Fabricación", progress: 0, eta: "", brand: "", notes: "" },
-    shelter:      { status: "Fabricación", progress: 0, eta: "", brand: "", notes: "" },
-    inversores:   { status: "Fabricación", progress: 0, eta: "", brand: "", notes: "" },
-    reconectador: { status: "Fabricación", progress: 0, eta: "", brand: "", notes: "" },
+    paneles:      { status: "Fabricación", progress: 0, edt: "", eta: "", brand: "", notes: "" },
+    trackers:     { status: "Fabricación", progress: 0, edt: "", eta: "", brand: "", notes: "" },
+    shelter:      { status: "Fabricación", progress: 0, edt: "", eta: "", brand: "", notes: "" },
+    inversores:   { status: "Fabricación", progress: 0, edt: "", eta: "", brand: "", notes: "" },
+    reconectador: { status: "Fabricación", progress: 0, edt: "", eta: "", brand: "", notes: "" },
   };
 }

@@ -179,6 +179,7 @@ export function normalizeEquipment(eqData) {
     result[key] = {
       status: item.status || "Fabricación",
       progress: item.progress !== undefined && item.progress !== "" ? Number(item.progress) || 0 : 0,
+      edt: item.edt ? String(item.edt).trim() : (item.etd ? String(item.etd).trim() : ""),
       eta: item.eta ? String(item.eta).trim() : "",
       brand: item.brand ? String(item.brand).trim() : "",
       notes: item.notes ? String(item.notes).trim() : ""

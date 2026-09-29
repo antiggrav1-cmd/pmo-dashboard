@@ -12,6 +12,7 @@ export const EquipmentRow = memo(function EquipmentRow({
     const currentEquipment = project.equipment || {};
     const targetEq = currentEquipment[equipmentId] || {
       status: "Fabricación",
+      edt: "",
       eta: "",
       brand: "",
       notes: ""

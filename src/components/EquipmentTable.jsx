@@ -211,7 +211,7 @@ export const EquipmentTable = memo(function EquipmentTable({
                   <th
                     key={eq.id}
                     onClick={() => handleSort(eq.id)}
-                    className={getThClass(eq.id, "px-3 min-w-[185px]")}
+                    className={getThClass(eq.id, "px-3 min-w-[195px]")}
                     title={`Clic para ordenar por estado de ${eq.name}`}
                   >
                     <div className="flex items-center justify-between">
