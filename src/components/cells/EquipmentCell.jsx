@@ -144,29 +144,26 @@ export const EquipmentCell = memo(function EquipmentCell({
         </div>
       </div>
 
-      {/* Bottom Row: EDT & ETA in a Single 2-Column Row */}
-      <div className="grid grid-cols-2 gap-1">
-        {/* EDT Date Input */}
-        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 min-w-0" title="Fecha Estimada de Salida / Despacho (EDT)">
-          <span className="text-[9px] text-slate-400 font-bold uppercase shrink-0">EDT:</span>
-          <input
-            type="date"
-            value={toInputDateFormat(edt)}
-            onChange={(e) => onChange("edt", e.target.value)}
-            className="w-full text-[10px] text-slate-700 bg-transparent focus:outline-none cursor-pointer min-w-0"
-          />
-        </div>
+      {/* EDT Date Input */}
+      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-0.5" title="Fecha Estimada de Salida / Despacho (EDT)">
+        <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0">EDT:</span>
+        <input
+          type="date"
+          value={toInputDateFormat(edt)}
+          onChange={(e) => onChange("edt", e.target.value)}
+          className="w-full text-[11px] text-slate-700 text-right bg-transparent focus:outline-none cursor-pointer"
+        />
+      </div>
 
-        {/* ETA Date Input */}
-        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 min-w-0" title="Fecha Estimada de Llegada a Sitio (ETA)">
-          <span className="text-[9px] text-slate-400 font-bold uppercase shrink-0">ETA:</span>
-          <input
-            type="date"
-            value={toInputDateFormat(eta)}
-            onChange={(e) => onChange("eta", e.target.value)}
-            className="w-full text-[10px] text-slate-700 bg-transparent focus:outline-none cursor-pointer min-w-0"
-          />
-        </div>
+      {/* ETA Date Input */}
+      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-0.5" title="Fecha Estimada de Llegada a Sitio (ETA)">
+        <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0">ETA:</span>
+        <input
+          type="date"
+          value={toInputDateFormat(eta)}
+          onChange={(e) => onChange("eta", e.target.value)}
+          className="w-full text-[11px] text-slate-700 text-right bg-transparent focus:outline-none cursor-pointer"
+        />
       </div>
     </div>
   );
