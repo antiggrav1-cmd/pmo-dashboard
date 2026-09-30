@@ -5,14 +5,7 @@ import { getDefaultEquipment } from "../utils/equipmentConstants";
  * Default standard payment milestones matching PMO billing structure
  */
 export function getDefaultPaymentMilestones() {
-  return [
-    { id: "hm-1", name: "Anticipo equipos", percentageCop: 0, percentageUsd: 0, valueCop: 0, valueUsd: 24000, status: "Cobrado", submittedAt: "" },
-    { id: "hm-2", name: "Hito Anticipo", percentageCop: 0, percentageUsd: 0, valueCop: 0, valueUsd: 82631, status: "Cobrado", submittedAt: "" },
-    { id: "hm-3", name: "Ingeniería de detalle", percentageCop: 0, percentageUsd: 0, valueCop: 422332090, valueUsd: 53315, status: "Cobrado", submittedAt: "" },
-    { id: "hm-4", name: "Hito salida de equipos y restante COP", percentageCop: 0, percentageUsd: 0, valueCop: 211166045, valueUsd: 106631, status: "Cobrado", submittedAt: "" },
-    { id: "hm-5", name: "Hito llegada de equipos", percentageCop: 0, percentageUsd: 0, valueCop: 316749067, valueUsd: 0, status: "Cobrado", submittedAt: "" },
-    { id: "hm-6", name: "Hito instalación", percentageCop: 0, percentageUsd: 0, valueCop: 79187267, valueUsd: 0, status: "Por cobrar", submittedAt: "" },
-  ];
+  return [];
 }
 
 /**
@@ -20,7 +13,7 @@ export function getDefaultPaymentMilestones() {
  */
 export function normalizePaymentMilestones(milestones) {
   if (!Array.isArray(milestones) || milestones.length === 0) {
-    return getDefaultPaymentMilestones();
+    return [];
   }
   return milestones.map((m, idx) => {
     let st = m.status ? String(m.status).trim() : "Por cobrar";

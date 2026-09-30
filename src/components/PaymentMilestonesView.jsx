@@ -6,11 +6,9 @@ import {
   Zap, 
   TrendingUp,
   Building2,
-  Calendar,
   SlidersHorizontal
 } from "lucide-react";
 import { formatCurrencyCop, formatCurrencyUsd, getDaysRemaining, toInputDateFormat } from "../utils/calculations";
-import { getDefaultPaymentMilestones } from "../models/projectModel";
 import { CurrencyInputCell } from "./cells/CurrencyInputCell";
 import { CountUpNumber } from "./CountUpNumber";
 import { ConnectionFlowStepper } from "./ConnectionFlowStepper";
@@ -37,9 +35,9 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
 
   const milestones = useMemo(() => {
     if (!currentProject) return [];
-    return currentProject.paymentMilestones && currentProject.paymentMilestones.length > 0
+    return Array.isArray(currentProject.paymentMilestones)
       ? currentProject.paymentMilestones
-      : getDefaultPaymentMilestones();
+      : [];
   }, [currentProject]);
 
   // Update a single payment milestone
@@ -431,14 +429,29 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
             </thead>
 
             <tbody className="divide-y divide-slate-200 text-xs">
-              {milestones.map((milestone, idx) => {
-                const isEven = idx % 2 === 0;
+              {milestones.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                    <p className="text-xs font-medium">Este proyecto no tiene hitos de pago registrados.</p>
+                    <button
+                      type="button"
+                      onClick={handleAddMilestone}
+                      className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-lemony text-navy font-bold text-xs hover:bg-lemony-light transition-all cursor-pointer shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Agregar Primer Hito de Pago</span>
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                milestones.map((milestone, idx) => {
+                  const isEven = idx % 2 === 0;
 
-                return (
-                  <tr
-                    key={milestone.id}
-                    className={`hover:bg-slate-50 transition-colors ${isEven ? "bg-white" : "bg-slate-50/50"}`}
-                  >
+                  return (
+                    <tr
+                      key={milestone.id}
+                      className={`hover:bg-slate-50 transition-colors ${isEven ? "bg-white" : "bg-slate-50/50"}`}
+                    >
                     {/* Hito de pago (Editable Text) */}
                     <td className="p-2 border-r border-slate-200">
                       <input
@@ -559,7 +572,7 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
                     </td>
                   </tr>
                 );
-              })}
+              }))}
 
               {/* Fila de Total */}
               <tr className="bg-slate-100/90 font-black text-slate-900 border-t-2 border-slate-300 text-xs">
