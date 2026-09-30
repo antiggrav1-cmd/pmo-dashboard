@@ -8,7 +8,13 @@ import {
   Building2,
   SlidersHorizontal
 } from "lucide-react";
-import { formatCurrencyCop, formatCurrencyUsd, getDaysRemaining, toInputDateFormat } from "../utils/calculations";
+import { 
+  formatCurrencyCop, 
+  formatCurrencyUsd, 
+  getDaysRemaining, 
+  toInputDateFormat,
+  getProjectFinancialMetrics 
+} from "../utils/calculations";
 import { CurrencyInputCell } from "./cells/CurrencyInputCell";
 import { CountUpNumber } from "./CountUpNumber";
 import { ConnectionFlowStepper } from "./ConnectionFlowStepper";
@@ -146,62 +152,21 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
   }, [currentProject, onUpdateProject]);
 
   // Totals calculations for current project
+  const projectFinancials = useMemo(() => {
+    return getProjectFinancialMetrics(currentProject);
+  }, [currentProject]);
+
   const { 
     totalCop, 
     totalUsd, 
-    totalCobradoCop, 
-    totalCobradoUsd, 
-    totalEnTramiteCop, 
-    totalEnTramiteUsd, 
-    totalPorCobrarCop, 
-    totalPorCobrarUsd 
-  } = useMemo(() => {
-    let cop = 0;
-    let usd = 0;
-    let cobCop = 0;
-    let cobUsd = 0;
-    let traCop = 0;
-    let traUsd = 0;
-    let porCop = 0;
-    let porUsd = 0;
-
-    milestones.forEach((m) => {
-      const vCop = Number(m.valueCop) || 0;
-      const vUsd = Number(m.valueUsd) || 0;
-      cop += vCop;
-      usd += vUsd;
-
-      const st = (m.status || "").toLowerCase();
-      if (st.includes("cobrad")) {
-        cobCop += vCop;
-        cobUsd += vUsd;
-      } else if (st.includes("saldo pendiente")) {
-        const saldoCop = m.saldoPendienteCop !== undefined && m.saldoPendienteCop !== "" ? Number(m.saldoPendienteCop) || 0 : vCop;
-        const saldoUsd = m.saldoPendienteUsd !== undefined && m.saldoPendienteUsd !== "" ? Number(m.saldoPendienteUsd) || 0 : vUsd;
-        traCop += saldoCop;
-        traUsd += saldoUsd;
-        porCop += Math.max(0, vCop - saldoCop);
-        porUsd += Math.max(0, vUsd - saldoUsd);
-      } else if (st.includes("trámite") || st.includes("tramite")) {
-        traCop += vCop;
-        traUsd += vUsd;
-      } else {
-        porCop += vCop;
-        porUsd += vUsd;
-      }
-    });
-
-    return {
-      totalCop: cop,
-      totalUsd: usd,
-      totalCobradoCop: cobCop,
-      totalCobradoUsd: cobUsd,
-      totalEnTramiteCop: traCop,
-      totalEnTramiteUsd: traUsd,
-      totalPorCobrarCop: porCop,
-      totalPorCobrarUsd: porUsd
-    };
-  }, [milestones]);
+    cobradoCop: totalCobradoCop, 
+    cobradoUsd: totalCobradoUsd, 
+    enTramiteCop: totalEnTramiteCop, 
+    enTramiteUsd: totalEnTramiteUsd, 
+    porCobrarCop: totalPorCobrarCop, 
+    porCobrarUsd: totalPorCobrarUsd,
+    pctCobrado
+  } = projectFinancials;
 
   // Portfolio-wide Grid Connection stats
   const gridStats = useMemo(() => {
@@ -259,12 +224,7 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
           <div className="mt-2">
             <span className="text-2xl font-black text-navy">
               <CountUpNumber 
-                value={(() => {
-                  const trm = Number(currentProject?.trmProyecto) || 4000;
-                  const totalEquiv = totalCop + totalUsd * trm;
-                  const cobradoEquiv = totalCobradoCop + totalCobradoUsd * trm;
-                  return totalEquiv > 0 ? Math.round((cobradoEquiv / totalEquiv) * 100) : 100;
-                })()} 
+                value={pctCobrado} 
                 suffix="%" 
               />
             </span>

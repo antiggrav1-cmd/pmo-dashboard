@@ -423,7 +423,79 @@ export function getPortfolioMetrics(projects = []) {
 }
 
 /**
- * Calculates aggregated financial totals (COP & USD) across a list of projects
+ * Calculates financial metrics for a single project using its specific TRM
+ */
+export function getProjectFinancialMetrics(project = {}) {
+  const trm = Number(project.trmProyecto) || 4000;
+  const milestones = project.paymentMilestones || [];
+  let totalCop = 0;
+  let totalUsd = 0;
+  let cobradoCop = 0;
+  let cobradoUsd = 0;
+  let enTramiteCop = 0;
+  let enTramiteUsd = 0;
+  let porCobrarCop = 0;
+  let porCobrarUsd = 0;
+  let cobradoCount = 0;
+
+  milestones.forEach((m) => {
+    const vCop = Number(m.valueCop) || 0;
+    const vUsd = Number(m.valueUsd) || 0;
+    totalCop += vCop;
+    totalUsd += vUsd;
+    const st = (m.status || "").toLowerCase();
+
+    if (st.includes("cobrad")) {
+      cobradoCop += vCop;
+      cobradoUsd += vUsd;
+      cobradoCount++;
+    } else if (st.includes("saldo pendiente")) {
+      const saldoCop = m.saldoPendienteCop !== undefined && m.saldoPendienteCop !== "" ? Number(m.saldoPendienteCop) || 0 : vCop;
+      const saldoUsd = m.saldoPendienteUsd !== undefined && m.saldoPendienteUsd !== "" ? Number(m.saldoPendienteUsd) || 0 : vUsd;
+      const alreadyPaidCop = Math.max(0, vCop - saldoCop);
+      const alreadyPaidUsd = Math.max(0, vUsd - saldoUsd);
+      cobradoCop += alreadyPaidCop;
+      cobradoUsd += alreadyPaidUsd;
+      enTramiteCop += saldoCop;
+      enTramiteUsd += saldoUsd;
+      if (alreadyPaidCop > 0 || alreadyPaidUsd > 0) {
+        cobradoCount += 0.5;
+      }
+    } else if (st.includes("trámite") || st.includes("tramite")) {
+      enTramiteCop += vCop;
+      enTramiteUsd += vUsd;
+    } else {
+      porCobrarCop += vCop;
+      porCobrarUsd += vUsd;
+    }
+  });
+
+  const totalEquiv = totalCop + totalUsd * trm;
+  const cobradoEquiv = cobradoCop + cobradoUsd * trm;
+  const pctCobrado = totalEquiv > 0 ? Math.round((cobradoEquiv / totalEquiv) * 100) : 100;
+  const pctHitosCobrados = milestones.length > 0 ? Math.round((cobradoCount / milestones.length) * 100) : 100;
+
+  return {
+    trm,
+    totalCop,
+    totalUsd,
+    cobradoCop,
+    cobradoUsd,
+    enTramiteCop,
+    enTramiteUsd,
+    porCobrarCop,
+    porCobrarUsd,
+    totalEquiv,
+    cobradoEquiv,
+    pctCobrado,
+    cobradoCount: Math.floor(cobradoCount),
+    totalHitos: milestones.length,
+    pctHitosCobrados
+  };
+}
+
+/**
+ * Calculates aggregated financial totals (COP & USD) across a list of projects using individual project TRMs
  */
 export function getPortfolioFinancials(projects = []) {
   let totalCop = 0;
@@ -434,38 +506,37 @@ export function getPortfolioFinancials(projects = []) {
   let enTramiteUsd = 0;
   let porCobrarCop = 0;
   let porCobrarUsd = 0;
+  let totalHitos = 0;
+  let hitosCobrados = 0;
+  let totalEquivSum = 0;
+  let cobradoEquivSum = 0;
 
-  projects.forEach((p) => {
-    const milestones = p.paymentMilestones || [];
-    milestones.forEach((m) => {
-      const vCop = Number(m.valueCop) || 0;
-      const vUsd = Number(m.valueUsd) || 0;
-      totalCop += vCop;
-      totalUsd += vUsd;
-      const st = (m.status || "").toLowerCase();
-      if (st.includes("cobrad")) {
-        cobradoCop += vCop;
-        cobradoUsd += vUsd;
-      } else if (st.includes("saldo pendiente")) {
-        const saldoCop = m.saldoPendienteCop !== undefined && m.saldoPendienteCop !== "" ? Number(m.saldoPendienteCop) || 0 : vCop;
-        const saldoUsd = m.saldoPendienteUsd !== undefined && m.saldoPendienteUsd !== "" ? Number(m.saldoPendienteUsd) || 0 : vUsd;
-        enTramiteCop += saldoCop;
-        enTramiteUsd += saldoUsd;
-        porCobrarCop += Math.max(0, vCop - saldoCop);
-        porCobrarUsd += Math.max(0, vUsd - saldoUsd);
-      } else if (st.includes("trámite") || st.includes("tramite")) {
-        enTramiteCop += vCop;
-        enTramiteUsd += vUsd;
-      } else {
-        porCobrarCop += vCop;
-        porCobrarUsd += vUsd;
-      }
-    });
+  const projectFinancials = projects.map((p) => {
+    const pf = getProjectFinancialMetrics(p);
+    totalCop += pf.totalCop;
+    totalUsd += pf.totalUsd;
+    cobradoCop += pf.cobradoCop;
+    cobradoUsd += pf.cobradoUsd;
+    enTramiteCop += pf.enTramiteCop;
+    enTramiteUsd += pf.enTramiteUsd;
+    porCobrarCop += pf.porCobrarCop;
+    porCobrarUsd += pf.porCobrarUsd;
+    totalHitos += pf.totalHitos;
+    hitosCobrados += pf.cobradoCount;
+    totalEquivSum += pf.totalEquiv;
+    cobradoEquivSum += pf.cobradoEquiv;
+
+    return {
+      projectId: p.id,
+      projectName: p.name,
+      portfolioName: p.portfolioName,
+      connectionState: p.connectionState || "Montaje",
+      ...pf
+    };
   });
 
-  const totalEquiv = totalCop + totalUsd * 4000;
-  const cobradoEquiv = cobradoCop + cobradoUsd * 4000;
-  const effectiveness = totalEquiv > 0 ? Math.round((cobradoEquiv / totalEquiv) * 100) : 100;
+  const effectiveness = totalEquivSum > 0 ? Math.round((cobradoEquivSum / totalEquivSum) * 100) : 100;
+  const pctHitosGlobal = totalHitos > 0 ? Math.round((hitosCobrados / totalHitos) * 100) : 100;
 
   return {
     totalCop,
@@ -476,6 +547,13 @@ export function getPortfolioFinancials(projects = []) {
     enTramiteUsd,
     porCobrarCop,
     porCobrarUsd,
-    effectiveness
+    totalHitos,
+    hitosCobrados,
+    totalEquiv: totalEquivSum,
+    cobradoEquiv: cobradoEquivSum,
+    effectiveness,
+    globalPct: effectiveness,
+    pctHitosGlobal,
+    projectFinancials
   };
 }

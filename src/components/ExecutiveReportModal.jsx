@@ -19,6 +19,8 @@ import {
 import { toPng } from "html-to-image";
 import { 
   getPortfolioMetrics, 
+  getPortfolioFinancials,
+  getProjectFinancialMetrics,
   formatDate, 
   getCregRegulatoryRisk,
   formatCurrencyCop,
@@ -54,26 +56,7 @@ const ProjectOnePager = memo(function ProjectOnePager({
 
   const financialMetrics = useMemo(() => {
     if (!project) return { totalCop: 0, totalUsd: 0, cobradoCop: 0, cobradoUsd: 0, cobradoCount: 0, totalHitos: 0, pctCobrado: 100 };
-    const milestones = project.paymentMilestones || [];
-    const { totalCop, totalUsd, cobradoCop, cobradoUsd, cobradoCount } = milestones.reduce(
-      (acc, m) => {
-        const vCop = Number(m.valueCop) || 0;
-        const vUsd = Number(m.valueUsd) || 0;
-        const isCobrado = (m.status || "").toLowerCase().includes("cobrad");
-        return {
-          totalCop: acc.totalCop + vCop,
-          totalUsd: acc.totalUsd + vUsd,
-          cobradoCop: acc.cobradoCop + (isCobrado ? vCop : 0),
-          cobradoUsd: acc.cobradoUsd + (isCobrado ? vUsd : 0),
-          cobradoCount: acc.cobradoCount + (isCobrado ? 1 : 0),
-        };
-      },
-      { totalCop: 0, totalUsd: 0, cobradoCop: 0, cobradoUsd: 0, cobradoCount: 0 }
-    );
-    const pctCobrado = (totalCop + totalUsd * 4000) > 0
-      ? Math.round(((cobradoCop + cobradoUsd * 4000) / (totalCop + totalUsd * 4000)) * 100)
-      : 100;
-    return { totalCop, totalUsd, cobradoCop, cobradoUsd, cobradoCount, totalHitos: milestones.length, pctCobrado };
+    return getProjectFinancialMetrics(project);
   }, [project]);
 
   if (!project) return null;
@@ -545,59 +528,7 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
 
   // Financial calculations across the entire portfolio
   const financialTotals = useMemo(() => {
-    const projectFinancials = projects.map((p) => {
-      const ms = p.paymentMilestones || [];
-      const { pCop, pUsd, pCobCop, pCobUsd, pCobCount } = ms.reduce(
-        (acc, m) => {
-          const vCop = Number(m.valueCop) || 0;
-          const vUsd = Number(m.valueUsd) || 0;
-          const isCobrado = (m.status || "").toLowerCase().includes("cobrad");
-          return {
-            pCop: acc.pCop + vCop,
-            pUsd: acc.pUsd + vUsd,
-            pCobCop: acc.pCobCop + (isCobrado ? vCop : 0),
-            pCobUsd: acc.pCobUsd + (isCobrado ? vUsd : 0),
-            pCobCount: acc.pCobCount + (isCobrado ? 1 : 0),
-          };
-        },
-        { pCop: 0, pUsd: 0, pCobCop: 0, pCobUsd: 0, pCobCount: 0 }
-      );
-      return {
-        projectId: p.id,
-        projectName: p.name,
-        portfolioName: p.portfolioName,
-        connectionState: p.connectionState || "Montaje",
-        totalCop: pCop,
-        totalUsd: pUsd,
-        cobradoCop: pCobCop,
-        cobradoUsd: pCobUsd,
-        hitosCobrados: pCobCount,
-        totalHitos: ms.length,
-        pctCobrado: (pCop + pUsd * 4000) > 0
-          ? Math.round(((pCobCop + pCobUsd * 4000) / (pCop + pUsd * 4000)) * 100)
-          : 0,
-      };
-    });
-
-    const totals = projectFinancials.reduce(
-      (acc, pf) => ({
-        totalCop: acc.totalCop + pf.totalCop,
-        totalUsd: acc.totalUsd + pf.totalUsd,
-        cobradoCop: acc.cobradoCop + pf.cobradoCop,
-        cobradoUsd: acc.cobradoUsd + pf.cobradoUsd,
-        porCobrarCop: acc.porCobrarCop + (pf.totalCop - pf.cobradoCop),
-        porCobrarUsd: acc.porCobrarUsd + (pf.totalUsd - pf.cobradoUsd),
-        totalHitos: acc.totalHitos + pf.totalHitos,
-        hitosCobrados: acc.hitosCobrados + pf.hitosCobrados,
-      }),
-      { totalCop: 0, totalUsd: 0, cobradoCop: 0, cobradoUsd: 0, porCobrarCop: 0, porCobrarUsd: 0, totalHitos: 0, hitosCobrados: 0 }
-    );
-
-    const globalPct = (totals.totalCop + totals.totalUsd * 4000) > 0
-      ? Math.round(((totals.cobradoCop + totals.cobradoUsd * 4000) / (totals.totalCop + totals.totalUsd * 4000)) * 100)
-      : 100;
-
-    return { ...totals, globalPct, projectFinancials };
+    return getPortfolioFinancials(projects);
   }, [projects]);
 
   // Navigation between projects
