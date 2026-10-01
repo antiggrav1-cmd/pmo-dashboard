@@ -6,7 +6,8 @@ import {
   Zap, 
   TrendingUp,
   Building2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Calendar
 } from "lucide-react";
 import { 
   formatCurrencyCop, 
@@ -34,7 +35,7 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
 }) {
   const [selectedProjectId, setSelectedProjectId] = useState(() => projects[0]?.id || "");
 
-  // Active project
+  // Active project (fallback to first project if selectedId is from another portfolio)
   const currentProject = useMemo(() => {
     return projects.find((p) => p.id === selectedProjectId) || projects[0] || null;
   }, [projects, selectedProjectId]);
@@ -174,6 +175,18 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
     const total = projects.length;
     return { connected, total, percentage: total > 0 ? Math.round((connected / total) * 100) : 0 };
   }, [projects]);
+
+  if (projects.length === 0 || !currentProject) {
+    return (
+      <div className="glass-card rounded-2xl border border-slate-200 p-12 text-center text-slate-500 space-y-3">
+        <Building2 className="w-12 h-12 text-slate-300 mx-auto" />
+        <h3 className="text-base font-bold text-slate-700">No hay proyectos en este portafolio</h3>
+        <p className="text-xs text-slate-400 max-w-md mx-auto">
+          Crea un nuevo proyecto en la vista general o importa datos para comenzar a gestionar los hitos de pago y estado de conexión.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
