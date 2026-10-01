@@ -14,6 +14,7 @@ import { ExcelImportModal } from "./components/ExcelImportModal";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { usePortfolios } from "./hooks/usePortfolios";
 import { useModal } from "./hooks/useModal";
 import { exportToExcel } from "./utils/excelService";
@@ -323,50 +324,64 @@ export function App() {
 
           {/* Tab 1: Cronograma y Avances */}
           {activeTab === "projects" && (
-            <ProjectTable
-              projects={currentPortfolio.projects || []}
-              portfolioName={currentPortfolio.name || ""}
-              searchTerm={searchTerm}
-              statusFilter={statusFilter}
-              onUpdateProject={updateProject}
-              onDeleteProject={handleDeleteProjectRequest}
-              onAddProject={() => addProject()}
-              onOpenProjectDetail={(project) => projectDetailModal.open(project)}
-            />
+            <ErrorBoundary title="Error al cargar Cronograma y Avances">
+              <ProjectTable
+                projects={currentPortfolio.projects || []}
+                portfolioName={currentPortfolio.name || ""}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                onUpdateProject={updateProject}
+                onDeleteProject={handleDeleteProjectRequest}
+                onAddProject={() => addProject()}
+                onOpenProjectDetail={(project) => projectDetailModal.open(project)}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Tab 2: Matriz de Equipos Principales */}
           {activeTab === "equipment" && (
-            <EquipmentTable
-              projects={currentPortfolio.projects || []}
-              portfolioName={currentPortfolio.name}
-              onUpdateProject={updateProject}
-            />
+            <ErrorBoundary title="Error al cargar Equipos Principales">
+              <EquipmentTable
+                projects={currentPortfolio.projects || []}
+                portfolioName={currentPortfolio.name}
+                onUpdateProject={updateProject}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Tab 3: Hitos de Pago (Facturación) */}
           {activeTab === "payments" && (
-            <PaymentMilestonesView
-              projects={currentPortfolio.projects || []}
-              portfolioName={currentPortfolio.name}
-              onUpdateProject={updateProject}
-              onOpenProjectDetail={(project) => projectDetailModal.open(project)}
-            />
+            <ErrorBoundary title="Error al cargar Hitos de Pago">
+              <PaymentMilestonesView
+                projects={currentPortfolio.projects || []}
+                portfolioName={currentPortfolio.name}
+                onUpdateProject={updateProject}
+                onOpenProjectDetail={(project) => projectDetailModal.open(project)}
+              />
+            </ErrorBoundary>
           )}
           {activeTab === "budget" && (
-            <BudgetView 
-              projects={currentPortfolio.projects || []} 
-              onUpdateProject={updateProject} 
-              onOpenProjectDetail={(project) => projectDetailModal.open(project)}
-            />
+            <ErrorBoundary title="Error al cargar Presupuesto">
+              <BudgetView 
+                projects={currentPortfolio.projects || []} 
+                onUpdateProject={updateProject} 
+                onOpenProjectDetail={(project) => projectDetailModal.open(project)}
+              />
+            </ErrorBoundary>
           )}
-          {activeTab === "alerts" && <AlertsView projects={currentPortfolio.projects || []} />}
+          {activeTab === "alerts" && (
+            <ErrorBoundary title="Error al cargar Alertas">
+              <AlertsView projects={currentPortfolio.projects || []} />
+            </ErrorBoundary>
+          )}
           {activeTab === "comments" && (
-            <CommentsView
-              projects={currentPortfolio.projects || []}
-              portfolioName={currentPortfolio.name}
-              onUpdateProject={updateProject}
-            />
+            <ErrorBoundary title="Error al cargar Comentarios">
+              <CommentsView
+                projects={currentPortfolio.projects || []}
+                portfolioName={currentPortfolio.name}
+                onUpdateProject={updateProject}
+              />
+            </ErrorBoundary>
           )}
             </>
           )}

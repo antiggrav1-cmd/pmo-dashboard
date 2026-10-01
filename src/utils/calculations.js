@@ -51,6 +51,17 @@ export function formatDate(dateStr) {
  */
 export function toInputDateFormat(dateStr) {
   if (!dateStr) return "";
+  if (typeof dateStr !== "string") {
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        return d.toISOString().slice(0, 10);
+      }
+    } catch {
+      return "";
+    }
+    return "";
+  }
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   const parts = dateStr.split("/");
   if (parts.length === 3) {
