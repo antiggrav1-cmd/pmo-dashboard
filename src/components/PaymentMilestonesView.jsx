@@ -561,10 +561,10 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
                 </td>
                 <td className="p-3 px-4 border-r border-slate-300 text-center text-slate-600 font-bold">
                   <div className="flex flex-col text-[11px] leading-tight">
-                    <span>{milestones.filter(m => (m.status || "").toLowerCase().includes("cobrad")).length} / {milestones.length} Cobrados</span>
+                    <span>{milestones.filter(m => (m?.status || "").toLowerCase().includes("cobrad")).length} / {milestones.length} Cobrados</span>
                     {totalEnTramiteCop > 0 || totalEnTramiteUsd > 0 ? (
                       <span className="text-cyan-700 text-[10px] font-semibold">
-                        ({milestones.filter(m => (m.status || "").toLowerCase().includes("trámite") || (m.status || "").toLowerCase().includes("tramite") || (m.status || "").toLowerCase().includes("saldo pendiente")).length} En trámite)
+                        ({milestones.filter(m => (m?.status || "").toLowerCase().includes("trámite") || (m?.status || "").toLowerCase().includes("tramite") || (m?.status || "").toLowerCase().includes("saldo pendiente")).length} En trámite)
                       </span>
                     ) : null}
                   </div>
