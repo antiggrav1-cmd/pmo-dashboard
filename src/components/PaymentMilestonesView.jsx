@@ -33,17 +33,18 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
   onUpdateProject,
   onOpenProjectDetail
 }) {
-  const [selectedProjectId, setSelectedProjectId] = useState(() => projects[0]?.id || "");
+  const safeProjects = useMemo(() => Array.isArray(projects) ? projects.filter(Boolean) : [], [projects]);
+  const [selectedProjectId, setSelectedProjectId] = useState(() => safeProjects[0]?.id || "");
 
   // Active project (fallback to first project if selectedId is from another portfolio)
   const currentProject = useMemo(() => {
-    return projects.find((p) => p.id === selectedProjectId) || projects[0] || null;
-  }, [projects, selectedProjectId]);
+    return safeProjects.find((p) => p.id === selectedProjectId) || safeProjects[0] || null;
+  }, [safeProjects, selectedProjectId]);
 
   const milestones = useMemo(() => {
     if (!currentProject) return [];
     return Array.isArray(currentProject.paymentMilestones)
-      ? currentProject.paymentMilestones
+      ? currentProject.paymentMilestones.filter(Boolean)
       : [];
   }, [currentProject]);
 
@@ -171,12 +172,12 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
 
   // Portfolio-wide Grid Connection stats
   const gridStats = useMemo(() => {
-    const connected = projects.filter((p) => p.gridConnected).length;
-    const total = projects.length;
+    const connected = safeProjects.filter((p) => p.gridConnected).length;
+    const total = safeProjects.length;
     return { connected, total, percentage: total > 0 ? Math.round((connected / total) * 100) : 0 };
-  }, [projects]);
+  }, [safeProjects]);
 
-  if (projects.length === 0 || !currentProject) {
+  if (safeProjects.length === 0 || !currentProject) {
     return (
       <div className="glass-card rounded-2xl border border-slate-200 p-12 text-center text-slate-500 space-y-3">
         <Building2 className="w-12 h-12 text-slate-300 mx-auto" />
@@ -316,9 +317,9 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
               onChange={(e) => setSelectedProjectId(e.target.value)}
               className="px-3 py-1.5 bg-white border border-slate-300 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-xl text-xs font-bold text-slate-900 focus:outline-none cursor-pointer shadow-2xs"
             >
-              {projects.map((p) => (
+              {safeProjects.map((p) => p && (
                 <option key={p.id} value={p.id}>
-                  {p.name} {p.connectionState ? `(${p.connectionState})` : p.gridConnected ? "(Energizado)" : ""}
+                  {p.name || "Proyecto"} {p.connectionState ? `(${p.connectionState})` : p.gridConnected ? "(Energizado)" : ""}
                 </option>
               ))}
             </select>

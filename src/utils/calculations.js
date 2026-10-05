@@ -125,11 +125,12 @@ export function getDaysRemaining(targetDateStr) {
  * fechaVenCREG ausente               → Sin dato (no genera falso positivo)
  */
 export function getCregRegulatoryRisk(project = {}) {
-  const cregStr = project.creg;
-  const realProgress = Number(project.realProgress) || 0;
+  const proj = project || {};
+  const cregStr = proj.creg;
+  const realProgress = Number(proj.realProgress) || 0;
 
   // If project is completed or already connected to grid, it is no longer at risk
-  if (realProgress >= 100 || project.gridConnected || project.connectionState === "Energizado" || project.connectionState === "Entregado") {
+  if (realProgress >= 100 || proj.gridConnected || proj.connectionState === "Energizado" || proj.connectionState === "Entregado") {
     return {
       riskLevel: "COMPLETED",
       daysLeft: null,
@@ -207,10 +208,11 @@ export function getCregRegulatoryRisk(project = {}) {
  * Evaluates FPO Schedule Risk crossing schedule, real progress, scheduled progress, GAP, and FPO deadline.
  */
 export function getFpoScheduleRisk(project = {}) {
-  const realProgress = Number(project.realProgress) || 0;
-  const scheduledProgress = Number(project.scheduledProgress) || 0;
+  const proj = project || {};
+  const realProgress = Number(proj.realProgress) || 0;
+  const scheduledProgress = Number(proj.scheduledProgress) || 0;
   const gap = calculateGap(realProgress, scheduledProgress);
-  const isCompleted = realProgress >= 100 || project.gridConnected || project.connectionState === "Energizado" || project.connectionState === "Entregado";
+  const isCompleted = realProgress >= 100 || proj.gridConnected || proj.connectionState === "Energizado" || proj.connectionState === "Entregado";
 
   if (isCompleted) {
     return {
@@ -224,7 +226,7 @@ export function getFpoScheduleRisk(project = {}) {
     };
   }
 
-  const fpoStr = project.fpo;
+  const fpoStr = proj.fpo;
   if (!fpoStr || !String(fpoStr).trim()) {
     return {
       isAtRisk: false,
@@ -289,12 +291,15 @@ export function getFpoScheduleRisk(project = {}) {
  */
 export function getPendingBillingAlerts(projects = []) {
   const alerts = [];
+  const projs = Array.isArray(projects) ? projects : [];
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  projects.forEach((project) => {
-    const milestones = project.paymentMilestones || [];
+  projs.forEach((project) => {
+    if (!project) return;
+    const milestones = Array.isArray(project.paymentMilestones) ? project.paymentMilestones : [];
     milestones.forEach((m) => {
+      if (!m) return;
       const status = m.status || "";
       const isEnTramite = status === "En trámite" || status === "Saldo Pendiente" || status.toLowerCase().includes("trámite") || status.toLowerCase().includes("tramite") || status.toLowerCase().includes("saldo pendiente");
 
@@ -344,7 +349,8 @@ export function getPendingBillingAlerts(projects = []) {
  * Calculates aggregated metrics for a list of projects
  */
 export function getPortfolioMetrics(projects = []) {
-  if (!projects.length) {
+  const projs = Array.isArray(projects) ? projects : [];
+  if (!projs.length) {
     return {
       total: 0,
       avgReal: 0,
@@ -375,7 +381,8 @@ export function getPortfolioMetrics(projects = []) {
   let cregCriticalCount = 0;
   let cregWarningCount = 0;
   let cregMissingCount = 0;
-  const projectWeights = projects.map((project) => {
+  const projectWeights = projs.map((project) => {
+    if (!project) return 0;
     const trm = Number(project.trmProyecto) || 0;
     return (Number(project.capexCop) || 0) + (Number(project.capexUsd) || 0) * trm;
   });
@@ -384,7 +391,8 @@ export function getPortfolioMetrics(projects = []) {
   let weightedScheduled = 0;
   let appliedWeight = 0;
 
-  projects.forEach((proj, index) => {
+  projs.forEach((proj, index) => {
+    if (!proj) return;
     const real = Number(proj.realProgress) || 0;
     const sched = Number(proj.scheduledProgress) || 0;
     const gap = Number(proj.gap) || 0;
@@ -414,7 +422,7 @@ export function getPortfolioMetrics(projects = []) {
     else if (cregRisk.riskLevel === "NO_DATA") cregMissingCount++;
   });
 
-  const total = projects.length;
+  const total = projs.length;
   return {
     total,
     avgReal: Number(((appliedWeight > 0 ? weightedReal / appliedWeight : totalReal / total)).toFixed(2)),
@@ -437,8 +445,9 @@ export function getPortfolioMetrics(projects = []) {
  * Calculates financial metrics for a single project using its specific TRM
  */
 export function getProjectFinancialMetrics(project = {}) {
-  const trm = Number(project.trmProyecto) || 4000;
-  const milestones = project.paymentMilestones || [];
+  const proj = project || {};
+  const trm = Number(proj.trmProyecto) || 4000;
+  const milestones = Array.isArray(proj.paymentMilestones) ? proj.paymentMilestones : [];
   let totalCop = 0;
   let totalUsd = 0;
   let cobradoCop = 0;
@@ -450,6 +459,7 @@ export function getProjectFinancialMetrics(project = {}) {
   let cobradoCount = 0;
 
   milestones.forEach((m) => {
+    if (!m) return;
     const vCop = Number(m.valueCop) || 0;
     const vUsd = Number(m.valueUsd) || 0;
     totalCop += vCop;
@@ -509,6 +519,7 @@ export function getProjectFinancialMetrics(project = {}) {
  * Calculates aggregated financial totals (COP & USD) across a list of projects using individual project TRMs
  */
 export function getPortfolioFinancials(projects = []) {
+  const projs = Array.isArray(projects) ? projects : [];
   let totalCop = 0;
   let totalUsd = 0;
   let cobradoCop = 0;
@@ -522,7 +533,8 @@ export function getPortfolioFinancials(projects = []) {
   let totalEquivSum = 0;
   let cobradoEquivSum = 0;
 
-  const projectFinancials = projects.map((p) => {
+  const projectFinancials = projs.map((p) => {
+    if (!p) return null;
     const pf = getProjectFinancialMetrics(p);
     totalCop += pf.totalCop;
     totalUsd += pf.totalUsd;
@@ -544,7 +556,7 @@ export function getPortfolioFinancials(projects = []) {
       connectionState: p.connectionState || "Montaje",
       ...pf
     };
-  });
+  }).filter(Boolean);
 
   const effectiveness = totalEquivSum > 0 ? Math.round((cobradoEquivSum / totalEquivSum) * 100) : 100;
   const pctHitosGlobal = totalHitos > 0 ? Math.round((hitosCobrados / totalHitos) * 100) : 100;
