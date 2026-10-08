@@ -440,9 +440,15 @@ export function EquipmentReportModal({
                                   )}
 
                                   {eq.notes && (
-                                    <div className="pt-1 border-t border-slate-200/60">
-                                      <div className="text-[10px] text-amber-800 bg-amber-50 p-1 rounded-md border border-amber-200/60 italic truncate" title={eq.notes}>
-                                        💬 "{eq.notes}"
+                                    <div className="pt-1.5 border-t border-amber-200/70 mt-auto">
+                                      <div className="text-[10px] text-amber-950 bg-amber-100/70 p-2 rounded-lg border border-amber-300/80 shadow-2xs space-y-0.5">
+                                        <div className="flex items-center gap-1 font-bold text-amber-900 text-[9px] uppercase tracking-wider">
+                                          <MessageSquareText className="w-3 h-3 text-amber-700 shrink-0" />
+                                          <span>Nota ({eq.name}):</span>
+                                        </div>
+                                        <p className="italic text-slate-800 leading-snug break-words">
+                                          "{eq.notes}"
+                                        </p>
                                       </div>
                                     </div>
                                   )}
@@ -544,23 +550,29 @@ export function EquipmentReportModal({
                           {proj.notes.map((n, idx) => (
                             <div
                               key={idx}
-                              className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/70 text-xs space-y-1"
+                              className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/90 text-xs space-y-2 shadow-2xs"
                             >
-                              <div className="flex items-center justify-between text-[11px]">
-                                <div className="flex items-center gap-1.5 font-bold text-navy">
-                                  {getEquipmentIcon(n.equipmentId)}
-                                  <span>{n.equipmentName}</span>
-                                  <span className="text-slate-400 font-normal">({n.status})</span>
+                              <div className="flex flex-wrap items-center justify-between gap-1.5 pb-1 border-b border-amber-200/60">
+                                <div className="flex items-center gap-2">
+                                  <span className="p-1 rounded-md bg-white border border-amber-200">
+                                    {getEquipmentIcon(n.equipmentId)}
+                                  </span>
+                                  <span className="font-bold text-navy text-xs">
+                                    {n.equipmentName}
+                                  </span>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-md border font-semibold ${getEquipmentStatusStyle(n.status)}`}>
+                                    {n.status}
+                                  </span>
                                 </div>
                                 {(n.edt || n.eta) && (
-                                  <span className="text-[10px] text-slate-500">
+                                  <span className="text-[10.5px] text-slate-500 font-medium">
                                     {n.eta ? `ETA: ${formatDate(n.eta)}` : `EDT: ${formatDate(n.edt)}`}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-slate-800 italic font-medium pl-1">
-                                "{n.notes}"
-                              </p>
+                              <div className="pl-1 text-slate-800 italic font-medium leading-relaxed">
+                                💬 "{n.notes}"
+                              </div>
                             </div>
                           ))}
                         </div>

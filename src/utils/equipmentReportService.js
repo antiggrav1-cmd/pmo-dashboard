@@ -216,15 +216,10 @@ export function generateEquipmentReportText(projects = [], portfolioName = "") {
       else if (isUnordered) alertMark = " ⚠️";
 
       text += `   • ${item.name}: ${item.status}${dates}${alertMark}\n`;
+      if (item.notes) {
+        text += `     ↳ 💬 Nota [${item.name}]: "${item.notes}"\n`;
+      }
     });
-
-    // Observaciones específicas de este proyecto si las hay
-    const projectNotes = p.items.filter((item) => item.notes);
-    if (projectNotes.length > 0) {
-      projectNotes.forEach((n) => {
-        text += `     ↳ Nota [${n.name}]: "${n.notes}"\n`;
-      });
-    }
     text += `\n`;
   });
 
