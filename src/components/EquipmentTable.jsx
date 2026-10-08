@@ -10,12 +10,14 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  X
+  X,
+  FileText
 } from "lucide-react";
 import { EQUIPMENT_TYPES, EQUIPMENT_STATUS_OPTIONS } from "../utils/equipmentConstants";
 import { getFullEquipmentMetrics } from "../services/equipmentService";
 import { EquipmentRow } from "./EquipmentRow";
 import { useTableSort } from "../hooks/useTableSort";
+import { EquipmentReportModal } from "./EquipmentReportModal";
 
 const STATUS_RANK_MAP = EQUIPMENT_STATUS_OPTIONS.reduce((acc, opt, idx) => {
   acc[opt.label.toLowerCase()] = idx;
@@ -110,6 +112,7 @@ export const EquipmentTable = memo(function EquipmentTable({
   // Toggle KPI visibility for extra vertical space
   const [showKpis, setShowKpis] = useState(true);
   const [showStatusGuide, setShowStatusGuide] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   return (
     <div className="space-y-3.5">
@@ -168,6 +171,15 @@ export const EquipmentTable = memo(function EquipmentTable({
               className="text-[10px] font-bold text-slate-500 hover:text-navy px-2 py-0.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-2xs cursor-pointer"
             >
               {showKpis ? "Ocultar KPIs" : "Ver KPIs"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowReportModal(true)}
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-navy hover:text-navy-dark px-2.5 py-1 rounded-lg bg-lemony hover:bg-lemony/80 transition-all shadow-2xs cursor-pointer border border-lemony/40"
+              title="Generar mini informe ejecutivo de equipos, alertas y comentarios"
+            >
+              <FileText className="w-3.5 h-3.5 text-navy" />
+              <span>Mini Informe</span>
             </button>
           </div>
 
@@ -296,6 +308,14 @@ export const EquipmentTable = memo(function EquipmentTable({
           </span>
         </div>
       </div>
+
+      {/* Equipment Mini Report Modal */}
+      <EquipmentReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        projects={projects}
+        portfolioName={portfolioName}
+      />
     </div>
   );
 });
