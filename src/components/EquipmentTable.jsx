@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo } from "react";
+import React, { useState, useMemo, useCallback, memo } from "react";
 import { 
   Sun, 
   Sliders, 
@@ -11,7 +11,9 @@ import {
   ArrowUp,
   ArrowDown,
   X,
-  FileText
+  FileText,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { EQUIPMENT_TYPES, EQUIPMENT_STATUS_OPTIONS } from "../utils/equipmentConstants";
 import { getFullEquipmentMetrics } from "../services/equipmentService";
@@ -113,6 +115,31 @@ export const EquipmentTable = memo(function EquipmentTable({
   const [showKpis, setShowKpis] = useState(true);
   const [showStatusGuide, setShowStatusGuide] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [expandedProjectIds, setExpandedProjectIds] = useState(() => new Set());
+
+  const handleToggleExpand = useCallback((projectId) => {
+    setExpandedProjectIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
+  }, []);
+
+  const allExpanded = useMemo(() => {
+    return sortedProjects.length > 0 && sortedProjects.every((p) => expandedProjectIds.has(p.id));
+  }, [sortedProjects, expandedProjectIds]);
+
+  const handleToggleAll = useCallback(() => {
+    if (allExpanded) {
+      setExpandedProjectIds(new Set());
+    } else {
+      setExpandedProjectIds(new Set(sortedProjects.map((p) => p.id)));
+    }
+  }, [allExpanded, sortedProjects]);
 
   return (
     <div className="space-y-3.5">
@@ -171,6 +198,24 @@ export const EquipmentTable = memo(function EquipmentTable({
               className="text-[10px] font-bold text-slate-500 hover:text-navy px-2 py-0.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-2xs cursor-pointer"
             >
               {showKpis ? "Ocultar KPIs" : "Ver KPIs"}
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleAll}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 hover:text-navy px-2 py-0.5 rounded-md bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-2xs cursor-pointer"
+              title={allExpanded ? "Plegar todos los proyectos" : "Desplegar todos los proyectos"}
+            >
+              {allExpanded ? (
+                <>
+                  <ChevronUp className="w-3 h-3 text-slate-500" />
+                  <span>Plegar filas</span>
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3 h-3 text-slate-500" />
+                  <span>Desplegar filas</span>
+                </>
+              )}
             </button>
             <button
               type="button"
@@ -259,6 +304,8 @@ export const EquipmentTable = memo(function EquipmentTable({
                   key={project.id}
                   project={project}
                   isEven={idx % 2 === 0}
+                  isExpanded={expandedProjectIds.has(project.id)}
+                  onToggleExpand={() => handleToggleExpand(project.id)}
                   onUpdateProject={onUpdateProject}
                 />
               ))}
