@@ -159,7 +159,7 @@ export function generateEquipmentReportText(projects = [], portfolioName = "") {
     equipmentNotes 
   } = data;
 
-  let text = `📦 INFORME EJECUTIVO DE ESTADO DE EQUIPOS\n`;
+  let text = `📦 INFORME DE ESTADO DE EQUIPOS POR PROYECTO\n`;
   text += `Portafolio: ${portfolioName || "General"}\n`;
   text += `Fecha de corte: ${dateFormatted}\n`;
   text += `Proyectos monitoreados: ${projectCount}\n`;
@@ -170,35 +170,8 @@ export function generateEquipmentReportText(projects = [], portfolioName = "") {
     return text;
   }
 
-  // 1. Resumen Global
-  text += `📊 1. RESUMEN GLOBAL DE SUMINISTROS:\n`;
-  text += `• Total ítems de equipos: ${totals.totalEquipments}\n`;
-  text += `• En sitio / instalados: ${totals.totalOnSite} (${totals.overallPercentageOnSite}%)\n`;
-  text += `• En tránsito / aduana: ${totals.totalInTransit}\n`;
-  text += `• En fabricación / gestión: ${totals.totalInManufacture}\n`;
-  if (totals.totalDelayed > 0) {
-    text += `• ⚠️ Retrasados reportados: ${totals.totalDelayed}\n`;
-  }
-  text += `\n`;
-
-  // 2. Balance por tipo de equipo
-  text += `⚙️ 2. BALANCE CONSOLIDADO POR EQUIPO:\n`;
-  metrics.forEach(({ type, summary }) => {
-    let statusMarker = "🟢";
-    if (summary.retrasado > 0) statusMarker = "🔴";
-    else if (summary.percentageOnSite < 50) statusMarker = "🟡";
-
-    text += `${statusMarker} ${type.name.toUpperCase()}:\n`;
-    text += `   • En sitio: ${summary.enSitio}/${summary.total} (${summary.percentageOnSite}%)\n`;
-    text += `   • En ruta/tránsito: ${summary.enTransito + summary.enNacionalizacion} | Fabricación: ${summary.fabricacion}\n`;
-    if (summary.retrasado > 0) {
-      text += `   • ⚠️ Retrasados: ${summary.retrasado}\n`;
-    }
-  });
-  text += `\n`;
-
-  // 3. Estado de TODOS los Equipos por Proyecto
-  text += `🏗️ 3. ESTADO DETALLADO DE EQUIPOS POR PROYECTO:\n`;
+  // ESTADO DETALLADO DE EQUIPOS POR PROYECTO
+  text += `ESTADO DETALLADO DE EQUIPOS POR PROYECTO:\n\n`;
   allProjectsEquipment.forEach((p) => {
     const fpoStr = p.fpo ? ` | FPO: ${formatDate(p.fpo)}` : "";
     const connStr = p.connectionState ? ` | Red: ${p.connectionState}` : "";
@@ -223,51 +196,7 @@ export function generateEquipmentReportText(projects = [], portfolioName = "") {
     text += `\n`;
   });
 
-  // 4. Alertas Críticas y Cuellos de Botella Logísticos
-  text += `🚨 4. ALERTAS Y CUELLOS DE BOTELLA LOGÍSTICOS:\n`;
-  if (bottlenecksByProject.length === 0 && procurementAlerts.length === 0) {
-    text += `✅ Sin alertas ni cuellos de botella detectados en la cadena de suministro.\n\n`;
-  } else {
-    bottlenecksByProject.forEach((proj) => {
-      text += `📍 ${proj.projectName} (FPO: ${formatDate(proj.fpo)}):\n`;
-      proj.bottlenecks.forEach((b) => {
-        const riskEmoji = b.riskLevel === "CRITICAL" ? "🔴" : b.riskLevel === "HIGH" ? "🟠" : "🟡";
-        text += `   ${riskEmoji} [${b.equipmentName}]: ${b.reason}\n`;
-        text += `      Estado: ${b.status}`;
-        if (b.edt) text += ` | EDT: ${formatDate(b.edt)}`;
-        if (b.eta) text += ` | ETA: ${formatDate(b.eta)}`;
-        text += `\n`;
-      });
-    });
-
-    if (procurementAlerts.length > 0) {
-      text += `\n📋 Equipos sin orden de compra emitida / No pedido:\n`;
-      procurementAlerts.forEach((pa) => {
-        text += `   ⚠️ ${pa.projectName} - ${pa.equipmentName}: Estado "${pa.status}" (${pa.reason})\n`;
-      });
-    }
-    text += `\n`;
-  }
-
-  // 5. Comentarios y Observaciones de Equipos
-  text += `💬 5. RESUMEN CONSOLIDADO DE OBSERVACIONES:\n`;
-  if (equipmentNotes.length === 0) {
-    text += `ℹ️ No hay observaciones adicionales registradas en los equipos para este corte.\n`;
-  } else {
-    equipmentNotes.forEach((proj) => {
-      text += `📌 ${proj.projectName}:\n`;
-      proj.notes.forEach((n) => {
-        let dateInfo = "";
-        if (n.edt || n.eta) {
-          dateInfo = ` (${[n.edt ? `EDT: ${formatDate(n.edt)}` : "", n.eta ? `ETA: ${formatDate(n.eta)}` : ""].filter(Boolean).join(" | ")})`;
-        }
-        text += `   • [${n.equipmentName}] - Estado: ${n.status}${dateInfo}:\n`;
-        text += `     "${n.notes}"\n`;
-      });
-    });
-  }
-
-  text += `\n${"═".repeat(50)}\n`;
+  text += `${"═".repeat(50)}\n`;
   text += `Generado automáticamente por PMO Control Tracker\n`;
 
   return text;
