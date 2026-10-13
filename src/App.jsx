@@ -364,6 +364,7 @@ export function App() {
             <ErrorBoundary title="Error al cargar Presupuesto">
               <BudgetView 
                 projects={currentPortfolio.projects || []} 
+                portfolioName={currentPortfolio.name || ""}
                 onUpdateProject={updateProject} 
                 onOpenProjectDetail={(project) => projectDetailModal.open(project)}
               />

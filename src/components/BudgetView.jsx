@@ -1,7 +1,8 @@
 import React, { memo, useMemo, useState } from "react";
-import { DollarSign, TrendingUp, AlertTriangle, Wallet, SlidersHorizontal, User, Radio, Percent } from "lucide-react";
+import { DollarSign, TrendingUp, AlertTriangle, Wallet, SlidersHorizontal, User, Radio, Percent, FileText } from "lucide-react";
 import { formatCurrencyCop, formatCurrencyUsd } from "../utils/calculations";
 import { getPortfolioBudgetMetrics, getProjectBudgetMetrics } from "../utils/budgetCalculations";
+import { BudgetReportModal } from "./BudgetReportModal";
 
 const statusStyle = { 
   Saludable: "bg-emerald-100 text-emerald-800", 
@@ -29,10 +30,12 @@ const BUDGET_COLUMNS = [
 
 export const BudgetView = memo(function BudgetView({ 
   projects = [], 
+  portfolioName = "",
   onUpdateProject,
   onOpenProjectDetail 
 }) {
   const [selectedId, setSelectedId] = useState(() => projects[0]?.id || "");
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const selected = projects.find((project) => project.id === selectedId) || projects[0];
   const totals = useMemo(() => getPortfolioBudgetMetrics(projects), [projects]);
 
@@ -85,6 +88,17 @@ export const BudgetView = memo(function BudgetView({
         <select value={selected?.id || ""} onChange={(e) => setSelectedId(e.target.value)} className="px-3 py-2 border rounded-xl text-xs font-bold">
           {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
         </select>
+
+        <button
+          type="button"
+          onClick={() => setIsReportOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-lemony text-navy hover:bg-lemony/80 transition-all shadow-2xs cursor-pointer border border-lemony/40 card-hover"
+          title="Generar mini informe ejecutivo de presupuesto en formato PDF / Imprimible"
+        >
+          <FileText className="w-3.5 h-3.5 text-navy" />
+          <span>Mini Informe PDF</span>
+        </button>
+
         <span className="ml-auto px-3 py-1 rounded-full bg-nashville/20 text-navy text-xs font-bold">
           Próximo corte: Quincenal — cada 15 días
         </span>
@@ -196,6 +210,13 @@ export const BudgetView = memo(function BudgetView({
           </tbody>
         </table>
       </div>
+
+      <BudgetReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        projects={projects}
+        portfolioName={portfolioName}
+      />
     </div>
   );
 });
