@@ -1,4 +1,5 @@
 import React, { memo, useMemo, useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { 
   X, 
   Printer, 
@@ -516,6 +517,21 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
     day: "numeric"
   });
 
+  // Manage body classes for clean print isolation (hiding #root background)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("modal-open-printing");
+      if (printOrientation === "landscape") {
+        document.body.classList.add("print-landscape");
+      } else {
+        document.body.classList.remove("print-landscape");
+      }
+      return () => {
+        document.body.classList.remove("modal-open-printing", "print-landscape");
+      };
+    }
+  }, [isOpen, printOrientation]);
+
   // Connection state summary
   const connectionStats = useMemo(() => {
     const montaje = projects.filter((p) => (p.connectionState || "Montaje") === "Montaje").length;
@@ -587,7 +603,7 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
 
   if (!isOpen || !portfolio) return null;
 
-  return (
+  return createPortal(
     <div className={`report-print-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible ${
       printOrientation === "landscape" ? "print-landscape" : "print-portrait"
     }`}>
@@ -1362,6 +1378,7 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
 
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

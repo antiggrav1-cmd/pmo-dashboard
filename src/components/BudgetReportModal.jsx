@@ -1,4 +1,5 @@
-import React, { memo, useMemo, useState, useRef } from "react";
+import React, { memo, useMemo, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Printer,
@@ -49,6 +50,21 @@ export const BudgetReportModal = memo(function BudgetReportModal({
       year: "numeric"
     });
   }, []);
+
+  // Manage body classes for clean print isolation (hiding #root background)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("modal-open-printing");
+      if (printOrientation === "landscape") {
+        document.body.classList.add("print-landscape");
+      } else {
+        document.body.classList.remove("print-landscape");
+      }
+      return () => {
+        document.body.classList.remove("modal-open-printing", "print-landscape");
+      };
+    }
+  }, [isOpen, printOrientation]);
 
   const totals = useMemo(() => getPortfolioBudgetMetrics(projects), [projects]);
 
@@ -150,7 +166,7 @@ export const BudgetReportModal = memo(function BudgetReportModal({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className={`report-print-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/75 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible ${
         printOrientation === "landscape" ? "print-landscape" : "print-portrait"
@@ -637,6 +653,7 @@ export const BudgetReportModal = memo(function BudgetReportModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });

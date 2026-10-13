@@ -154,6 +154,16 @@
     display: none !important;
   }
 
+  /* When a modal report is being printed, hide the background application entirely */
+  body.modal-open-printing #root,
+  body:has(.report-print-overlay) #root {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+  }
+
   /* Modal turns into a clean printable page container */
   .report-print-overlay {
     position: static !important;
