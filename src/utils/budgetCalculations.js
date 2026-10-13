@@ -19,6 +19,7 @@ export function getProjectBudgetMetrics(project = {}) {
       eac: null,
       margin: null,
       marginPct: null,
+      spentPct: null,
       status: "Falta TRM",
       missingTrm: true
     };
@@ -37,6 +38,7 @@ export function getProjectBudgetMetrics(project = {}) {
   const eac = cpi && cpi > 0 ? (bac / (ev / ac)) : bac;
   const margin = capexVenta - eac;
   const marginPct = capexVenta > 0 ? Number(((margin / capexVenta) * 100).toFixed(2)) : 0;
+  const spentPct = bac > 0 ? Number(((ac / bac) * 100).toFixed(1)) : (ac > 0 ? 100 : 0);
   const status = cpi === null ? "Sin ejecución" : cpi >= 1 ? "Saludable" : cpi >= 0.95 ? "En riesgo" : "Sobrecosto";
 
   return {
@@ -51,6 +53,7 @@ export function getProjectBudgetMetrics(project = {}) {
     eac,
     margin,
     marginPct,
+    spentPct,
     status,
     missingTrm: false
   };
@@ -79,6 +82,7 @@ export function getPortfolioBudgetMetrics(projects = []) {
   const eac = cpi && cpi > 0 ? (totals.bac / (totals.ev / totals.ac)) : totals.bac;
   const margin = totals.capexVenta - eac;
   const marginPct = totals.capexVenta > 0 ? Number(((margin / totals.capexVenta) * 100).toFixed(2)) : 0;
+  const spentPct = totals.bac > 0 ? Number(((totals.ac / totals.bac) * 100).toFixed(1)) : (totals.ac > 0 ? 100 : 0);
 
   return {
     ...totals,
@@ -86,7 +90,8 @@ export function getPortfolioBudgetMetrics(projects = []) {
     cv,
     eac,
     margin,
-    marginPct
+    marginPct,
+    spentPct
   };
 }
 

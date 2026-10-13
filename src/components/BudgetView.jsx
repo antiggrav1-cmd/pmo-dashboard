@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from "react";
-import { DollarSign, TrendingUp, AlertTriangle, Wallet, SlidersHorizontal, User, Radio } from "lucide-react";
+import { DollarSign, TrendingUp, AlertTriangle, Wallet, SlidersHorizontal, User, Radio, Percent } from "lucide-react";
 import { formatCurrencyCop, formatCurrencyUsd } from "../utils/calculations";
 import { getPortfolioBudgetMetrics, getProjectBudgetMetrics } from "../utils/budgetCalculations";
 
@@ -15,6 +15,7 @@ const money = (value) => value === null || value === undefined ? "—" : formatC
 const BUDGET_COLUMNS = [
   { id: "name", label: "Proyecto", align: "text-left" },
   { id: "realProgress", label: "% Avance Real", align: "text-right" },
+  { id: "spentPct", label: "% Presup. Gastado", align: "text-right" },
   { id: "capexVenta", label: "CAPEX (Venta)", align: "text-right" },
   { id: "bac", label: "Presup. (BAC)", align: "text-right" },
   { id: "ev", label: "Valor Ganado (EV)", align: "text-right" },
@@ -42,11 +43,41 @@ export const BudgetView = memo(function BudgetView({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card icon={<Wallet />} label="Presupuesto interno (BAC)" value={money(totals.bac)} note={`Ejecutado: ${totals.bac ? Math.round(totals.ac / totals.bac * 100) : 0}%`} />
-        <Card icon={<TrendingUp />} label="CPI del portafolio" value={totals.cpi === null ? "—" : totals.cpi.toFixed(2)} note={totals.cpi === null ? "Sin costo real registrado" : totals.cpi >= 1 ? "Eficiente" : totals.cpi >= .95 ? "Alerta" : "Sobrecosto"} />
-        <Card icon={<AlertTriangle />} label="Proyectos en sobrecosto" value={totals.overcost} note="CPI menor a 0.95" danger={totals.overcost > 0} />
-        <Card icon={<DollarSign />} label="Margen proyectado" value={money(totals.margin)} note={`CAPEX venta: ${money(totals.capexVenta)}`} danger={totals.margin < 0} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <Card 
+          icon={<Wallet />} 
+          label="Presupuesto interno (BAC)" 
+          value={money(totals.bac)} 
+          note={`Costo real (AC): ${money(totals.ac)}`} 
+        />
+        <Card 
+          icon={<Percent />} 
+          label="% Presupuesto Gastado" 
+          value={`${totals.spentPct !== null && totals.spentPct !== undefined ? totals.spentPct.toFixed(1) : 0}%`} 
+          note={`${money(totals.ac)} de ${money(totals.bac)}`} 
+          danger={totals.spentPct > 100} 
+          progressBar={totals.spentPct} 
+        />
+        <Card 
+          icon={<TrendingUp />} 
+          label="CPI del portafolio" 
+          value={totals.cpi === null ? "—" : totals.cpi.toFixed(2)} 
+          note={totals.cpi === null ? "Sin costo real registrado" : totals.cpi >= 1 ? "Eficiente" : totals.cpi >= .95 ? "Alerta" : "Sobrecosto"} 
+        />
+        <Card 
+          icon={<AlertTriangle />} 
+          label="Proyectos en sobrecosto" 
+          value={totals.overcost} 
+          note="CPI menor a 0.95" 
+          danger={totals.overcost > 0} 
+        />
+        <Card 
+          icon={<DollarSign />} 
+          label="Margen proyectado" 
+          value={money(totals.margin)} 
+          note={`CAPEX venta: ${money(totals.capexVenta)}`} 
+          danger={totals.margin < 0} 
+        />
       </div>
 
       <div className="glass-card rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center gap-3">
@@ -103,6 +134,21 @@ export const BudgetView = memo(function BudgetView({
                 >
                   <td className="p-3 font-bold text-navy text-left">{project.name}</td>
                   <td className="p-3 text-right">{project.realProgress !== undefined && project.realProgress !== "" ? `${project.realProgress}%` : "—"}</td>
+                  <td className="p-3 text-right">
+                    {m.spentPct !== null && m.spentPct !== undefined ? (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                        m.spentPct > 100 
+                          ? "bg-rose-100 text-rose-800" 
+                          : m.spentPct > 90 
+                            ? "bg-amber-100 text-amber-800" 
+                            : "bg-emerald-50 text-emerald-800"
+                      }`}>
+                        {m.spentPct.toFixed(1)}%
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td className="p-3 text-right">{money(m.capexVenta)}</td>
                   <td className="p-3 text-right">{money(m.bac)}</td>
                   <td className="p-3 text-right">{money(m.ev)}</td>
@@ -122,6 +168,21 @@ export const BudgetView = memo(function BudgetView({
             <tr className="bg-slate-100 font-black border-t-2">
               <td className="p-3">TOTAL PORTAFOLIO</td>
               <td></td>
+              <td className="p-3 text-right">
+                {totals.spentPct !== null && totals.spentPct !== undefined ? (
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-black ${
+                    totals.spentPct > 100 
+                      ? "bg-rose-100 text-rose-800" 
+                      : totals.spentPct > 90 
+                        ? "bg-amber-100 text-amber-800" 
+                        : "bg-emerald-100 text-emerald-800"
+                  }`}>
+                    {totals.spentPct.toFixed(1)}%
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </td>
               <td className="p-3 text-right">{money(totals.capexVenta)}</td>
               <td className="p-3 text-right">{money(totals.bac)}</td>
               <td className="p-3 text-right">{money(totals.ev)}</td>
@@ -139,15 +200,27 @@ export const BudgetView = memo(function BudgetView({
   );
 });
 
-function Card({ icon, label, value, note, danger }) { 
+function Card({ icon, label, value, note, danger, progressBar }) { 
   return (
-    <div className={`glass-card glass-glow card-hover p-5 rounded-2xl min-h-[145px] border transition-all ${danger ? "border-rose-200" : "border-slate-200"}`}>
-      <div className="flex justify-between text-slate-500">
-        <span className="text-[11px] font-black uppercase">{label}</span>
-        {React.cloneElement(icon, { className: danger ? "w-4 h-4 text-rose-600" : "w-4 h-4 text-emerald-600" })}
+    <div className={`glass-card glass-glow card-hover p-5 rounded-2xl min-h-[145px] border transition-all flex flex-col justify-between ${danger ? "border-rose-200" : "border-slate-200"}`}>
+      <div>
+        <div className="flex justify-between text-slate-500">
+          <span className="text-[11px] font-black uppercase">{label}</span>
+          {React.cloneElement(icon, { className: danger ? "w-4 h-4 text-rose-600" : "w-4 h-4 text-emerald-600" })}
+        </div>
+        <p className="mt-3 text-2xl font-black text-navy break-words">{value}</p>
       </div>
-      <p className="mt-3 text-2xl font-black text-navy break-words">{value}</p>
-      <p className="mt-1 text-[11px] text-slate-500">{note}</p>
+      <div>
+        {typeof progressBar === "number" && (
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mb-1.5 overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-500 ${progressBar > 100 ? "bg-rose-500" : progressBar > 90 ? "bg-amber-500" : "bg-emerald-500"}`}
+              style={{ width: `${Math.min(100, Math.max(0, progressBar))}%` }}
+            />
+          </div>
+        )}
+        <p className="text-[11px] text-slate-500">{note}</p>
+      </div>
     </div>
   );
 }
@@ -166,6 +239,17 @@ function BudgetDetail({ project, update, onOpenProjectDetail }) {
           <div className="flex items-center gap-2">
             <h3 className="font-black text-navy text-base">Corte y Seguimiento Presupuestal — {project.name}</h3>
             {m.missingTrm && <span className="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">⚠ Falta TRM</span>}
+            {m.spentPct !== null && (
+              <span className={`text-xs font-black px-2.5 py-0.5 rounded-full border ${
+                m.spentPct > 100 
+                  ? "bg-rose-50 text-rose-700 border-rose-200" 
+                  : m.spentPct > 90 
+                    ? "bg-amber-50 text-amber-700 border-amber-200" 
+                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+              }`}>
+                {m.spentPct.toFixed(1)}% Gastado
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-600 font-medium">
             <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700">
@@ -270,9 +354,15 @@ function BudgetDetail({ project, update, onOpenProjectDetail }) {
         </div>
       </div>
 
-      <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600">
-        <div>
-          BAC blended: <b>{money(m.bac)}</b> · AC blended: <b>{money(m.ac)}</b> · CAPEX venta: <b>{money(m.capexVenta)}</b>
+      <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span>BAC blended: <b>{money(m.bac)}</b></span>
+          <span>·</span>
+          <span>AC blended: <b>{money(m.ac)}</b></span>
+          <span>·</span>
+          <span>% Gastado: <b className={m.spentPct > 100 ? "text-rose-600" : m.spentPct > 90 ? "text-amber-600" : "text-emerald-700"}>{m.spentPct !== null && m.spentPct !== undefined ? `${m.spentPct.toFixed(1)}%` : "—"}</b></span>
+          <span>·</span>
+          <span>CAPEX venta: <b>{money(m.capexVenta)}</b></span>
         </div>
         <div className="text-[11px] text-slate-500">
           💡 Ingresa el Costo Real acumulado a la fecha de corte quincenal.

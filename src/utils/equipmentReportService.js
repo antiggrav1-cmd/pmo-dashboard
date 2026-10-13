@@ -143,61 +143,49 @@ export function getEquipmentReportData(projects = [], portfolioName = "") {
 export function generateEquipmentReportText(projects = [], portfolioName = "") {
   const now = new Date();
   const dateFormatted = now.toLocaleDateString("es-CO", {
-    year: "numeric",
+    day: "numeric",
     month: "long",
-    day: "numeric"
+    year: "numeric"
   });
 
   const data = getEquipmentReportData(projects, portfolioName);
-  const { 
-    projectCount, 
-    totals, 
-    metrics, 
-    allProjectsEquipment,
-    bottlenecksByProject, 
-    procurementAlerts, 
-    equipmentNotes 
-  } = data;
+  const { projectCount, allProjectsEquipment } = data;
 
-  let text = `📦 INFORME DE ESTADO DE EQUIPOS POR PROYECTO\n`;
-  text += `Portafolio: ${portfolioName || "General"}\n`;
-  text += `Fecha de corte: ${dateFormatted}\n`;
-  text += `Proyectos monitoreados: ${projectCount}\n`;
-  text += `${"═".repeat(50)}\n\n`;
+  const header = portfolioName ? `📦 *${portfolioName}*` : "📦 *Equipos*";
+  let text = `${header} — ${dateFormatted}\n`;
+  text += `${projectCount} proyecto${projectCount !== 1 ? "s" : ""} monitoreados\n\n`;
 
   if (projectCount === 0) {
-    text += `ℹ️ No hay proyectos registrados en este portafolio.\n`;
+    text += `Sin proyectos registrados.\n`;
     return text;
   }
 
-  // ESTADO DETALLADO DE EQUIPOS POR PROYECTO
-  text += `ESTADO DETALLADO DE EQUIPOS POR PROYECTO:\n\n`;
   allProjectsEquipment.forEach((p) => {
-    const fpoStr = p.fpo ? ` | FPO: ${formatDate(p.fpo)}` : "";
-    const connStr = p.connectionState ? ` | Red: ${p.connectionState}` : "";
-    text += `${p.index}. ${p.projectName}${fpoStr}${connStr}\n`;
+    const fpoStr = p.fpo ? ` · FPO: ${formatDate(p.fpo)}` : "";
+    const connStr = p.connectionState ? ` · ${p.connectionState}` : "";
+    text += `*${p.projectName}*${fpoStr}${connStr}\n`;
 
     p.items.forEach((item) => {
-      let dates = "";
-      if (item.edt || item.eta) {
-        dates = ` (${[item.edt ? `EDT: ${formatDate(item.edt)}` : "", item.eta ? `ETA: ${formatDate(item.eta)}` : ""].filter(Boolean).join(" | ")})`;
-      }
-      let alertMark = "";
       const isDelayed = item.status.toLowerCase().includes("retrasad");
-      const isUnordered = item.status.toLowerCase().includes("no pedido") || item.status.toLowerCase().includes("pendiente oc");
-      if (isDelayed) alertMark = " ⚠️";
-      else if (isUnordered) alertMark = " ⚠️";
+      const isUnordered =
+        item.status.toLowerCase().includes("no pedido") ||
+        item.status.toLowerCase().includes("pendiente oc");
+      const alert = isDelayed || isUnordered ? " ⚠️" : "";
 
-      text += `   • ${item.name}: ${item.status}${dates}${alertMark}\n`;
+      let datePart = "";
+      if (item.eta) datePart = ` · ETA: ${formatDate(item.eta)}`;
+      else if (item.edt) datePart = ` · EDT: ${formatDate(item.edt)}`;
+
+      text += `  · ${item.name}: ${item.status}${datePart}${alert}\n`;
       if (item.notes) {
-        text += `     ↳ 💬 Nota [${item.name}]: "${item.notes}"\n`;
+        text += `    💬 ${item.notes}\n`;
       }
     });
-    text += `\n`;
+
+    text += "\n";
   });
 
-  text += `${"═".repeat(50)}\n`;
-  text += `Generado automáticamente por PMO Control Tracker\n`;
+  text += `_PMO Control Tracker_`;
 
   return text;
 }

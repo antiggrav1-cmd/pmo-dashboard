@@ -376,6 +376,67 @@ export function EquipmentReportModal({
                   </div>
                 )}
               </div>
+
+              {/* Comentarios y Observaciones de Equipos */}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-navy flex items-center gap-1.5">
+                  <MessageSquareText className="w-4 h-4 text-amber-500" />
+                  <span>Resumen de Comentarios y Observaciones ({reportData.totalNotesCount})</span>
+                </h3>
+
+                {reportData.equipmentNotes.length === 0 ? (
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-500 text-xs">
+                    ℹ️ No se han registrado observaciones adicionales en los equipos de este portafolio.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {reportData.equipmentNotes.map((proj) => (
+                      <div
+                        key={proj.projectId}
+                        className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2.5"
+                      >
+                        <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                          <span className="text-xs font-black text-navy">{proj.projectName}</span>
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                            {proj.notes.length} nota(s)
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          {proj.notes.map((n, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/90 text-xs space-y-2 shadow-2xs"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-1.5 pb-1 border-b border-amber-200/60">
+                                <div className="flex items-center gap-2">
+                                  <span className="p-1 rounded-md bg-white border border-amber-200">
+                                    {getEquipmentIcon(n.equipmentId)}
+                                  </span>
+                                  <span className="font-bold text-navy text-xs">
+                                    {n.equipmentName}
+                                  </span>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-md border font-semibold ${getEquipmentStatusStyle(n.status)}`}>
+                                    {n.status}
+                                  </span>
+                                </div>
+                                {(n.edt || n.eta) && (
+                                  <span className="text-[10.5px] text-slate-500 font-medium">
+                                    {n.eta ? `ETA: ${formatDate(n.eta)}` : `EDT: ${formatDate(n.edt)}`}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="pl-1 text-slate-800 italic font-medium leading-relaxed">
+                                💬 "{n.notes}"
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             /* Plain Text Mode for WhatsApp / Teams */
