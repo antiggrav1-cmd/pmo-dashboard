@@ -293,7 +293,14 @@ const ProjectOnePager = memo(function ProjectOnePager({
               {(project.paymentMilestones || []).length > 0 ? (
                 (project.paymentMilestones || []).map((m, idx) => (
                   <tr key={m.id || idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                    <td className="p-2 font-bold text-slate-900 border-r border-slate-200">{m.name}</td>
+                    <td className="p-2 font-bold text-slate-900 border-r border-slate-200">
+                      <div>{m.name}</div>
+                      {m.notes && (
+                        <div className="text-[9.5px] text-amber-800 font-normal italic mt-0.5">
+                          Nota: {m.notes}
+                        </div>
+                      )}
+                    </td>
                     <td className="p-2 text-right font-medium text-slate-900 border-r border-slate-200 tabular-nums">
                       {formatCurrencyCop(m.valueCop)}
                     </td>

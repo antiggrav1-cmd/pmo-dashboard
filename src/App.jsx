@@ -372,7 +372,10 @@ export function App() {
           )}
           {activeTab === "alerts" && (
             <ErrorBoundary title="Error al cargar Alertas">
-              <AlertsView projects={currentPortfolio.projects || []} />
+              <AlertsView 
+                projects={currentPortfolio.projects || []} 
+                portfolioName={currentPortfolio.name || ""}
+              />
             </ErrorBoundary>
           )}
           {activeTab === "comments" && (

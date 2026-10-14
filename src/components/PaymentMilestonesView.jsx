@@ -7,7 +7,9 @@ import {
   TrendingUp,
   Building2,
   SlidersHorizontal,
-  Calendar
+  Calendar,
+  FileText,
+  MessageSquareText
 } from "lucide-react";
 import { 
   formatCurrencyCop, 
@@ -19,6 +21,8 @@ import {
 import { CurrencyInputCell } from "./cells/CurrencyInputCell";
 import { CountUpNumber } from "./CountUpNumber";
 import { ConnectionFlowStepper } from "./ConnectionFlowStepper";
+import { PaymentMilestonesReportModal } from "./PaymentMilestonesReportModal";
+import { MilestoneCommentPopover } from "./cells/MilestoneCommentPopover";
 
 const STATUS_COLORS = {
   "Cobrado": "bg-blue-50 text-blue-700 border-blue-200 font-bold",
@@ -29,12 +33,14 @@ const STATUS_COLORS = {
 
 export const PaymentMilestonesView = memo(function PaymentMilestonesView({
   projects = [],
-  portfolioName: _portfolioName = "",
+  portfolioName = "",
   onUpdateProject,
   onOpenProjectDetail
 }) {
   const safeProjects = useMemo(() => Array.isArray(projects) ? projects.filter(Boolean) : [], [projects]);
   const [selectedProjectId, setSelectedProjectId] = useState(() => safeProjects[0]?.id || "");
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [activeMilestoneCommentId, setActiveMilestoneCommentId] = useState(null);
 
   // Active project (fallback to first project if selectedId is from another portfolio)
   const currentProject = useMemo(() => {
@@ -111,7 +117,8 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
       percentageCop: 0,
       percentageUsd: 0,
       status: "Por cobrar",
-      submittedAt: ""
+      submittedAt: "",
+      notes: ""
     };
 
     onUpdateProject({
@@ -368,10 +375,21 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
               />
             </div>
           )}
+
+          {/* Mini Informe PDF Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsReportOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-lemony text-navy hover:bg-lemony/80 transition-all shadow-2xs cursor-pointer border border-lemony/40 card-hover shrink-0 ml-auto sm:ml-0"
+            title="Generar mini informe ejecutivo de hitos de pago y facturación en formato PDF / Imprimible"
+          >
+            <FileText className="w-3.5 h-3.5 text-navy" />
+            <span>Mini Informe PDF</span>
+          </button>
         </div>
 
         {/* Payment Milestones Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[340px]">
           <table className="w-full text-left border-collapse min-w-[1100px]">
             <thead>
               <tr className="bg-navy text-white text-[13px] font-bold select-none">
@@ -426,15 +444,37 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
                       key={milestone.id}
                       className={`hover:bg-slate-50 transition-colors ${isEven ? "bg-white" : "bg-slate-50/50"}`}
                     >
-                    {/* Hito de pago (Editable Text) */}
-                    <td className="p-2 border-r border-slate-200">
-                      <input
-                        type="text"
-                        placeholder="Nombre del hito de pago..."
-                        value={milestone.name || ""}
-                        onChange={(e) => handleMilestoneChange(milestone.id, "name", e.target.value)}
-                        className="w-full px-2 py-1.5 bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-300 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none transition-all"
-                      />
+                    {/* Hito de pago (Editable Text & Note Popover) */}
+                    <td className="p-2 border-r border-slate-200 align-top">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          placeholder="Nombre del hito de pago..."
+                          value={milestone.name || ""}
+                          onChange={(e) => handleMilestoneChange(milestone.id, "name", e.target.value)}
+                          className="flex-1 min-w-0 px-2 py-1.5 bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-300 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none transition-all"
+                        />
+                        <MilestoneCommentPopover
+                          isOpen={activeMilestoneCommentId === milestone.id}
+                          onToggle={() => setActiveMilestoneCommentId(prev => prev === milestone.id ? null : milestone.id)}
+                          onClose={() => setActiveMilestoneCommentId(null)}
+                          notes={milestone.notes || ""}
+                          milestoneName={milestone.name}
+                          onSave={(val) => handleMilestoneChange(milestone.id, "notes", val)}
+                        />
+                      </div>
+
+                      {/* Note Preview Pill if comment exists */}
+                      {milestone.notes && (
+                        <div
+                          onClick={() => setActiveMilestoneCommentId(milestone.id)}
+                          className="mt-1.5 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-50/90 hover:bg-amber-100/90 border border-amber-200/80 text-[10.5px] text-amber-900 cursor-pointer transition-all shadow-2xs group"
+                          title={`Observación: "${milestone.notes}" (Clic para editar)`}
+                        >
+                          <MessageSquareText className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span className="truncate flex-1 font-medium">{milestone.notes}</span>
+                        </div>
+                      )}
                     </td>
 
                     {/* Valor COP (Formatted Currency Cell) */}
@@ -590,6 +630,14 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
           </span>
         </div>
       </div>
+
+      <PaymentMilestonesReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        projects={safeProjects}
+        portfolioName={portfolioName}
+        initialProjectId={currentProject?.id || ""}
+      />
     </div>
   );
 });

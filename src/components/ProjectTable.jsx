@@ -10,9 +10,11 @@ import {
   Copy,
   Check,
   Download,
-  FileDown
+  FileDown,
+  FileText
 } from "lucide-react";
 import { ProjectRow } from "./ProjectRow";
+import { ScheduleReportModal } from "./ScheduleReportModal";
 import { useTableSort } from "../hooks/useTableSort";
 import { calculateGap, determineStatus } from "../utils/calculations";
 import { 
@@ -44,6 +46,7 @@ export const ProjectTable = memo(function ProjectTable({
   onOpenProjectDetail
 }) {
   const [copiedGeneral, setCopiedGeneral] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   // Copy full consolidated summary report for chat
   const handleCopyConsolidatedReport = useCallback(async () => {
@@ -181,6 +184,22 @@ export const ProjectTable = memo(function ProjectTable({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Mini Informe PDF Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsReportOpen(true)}
+            disabled={projects.length === 0}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs border ${
+              projects.length > 0
+                ? "bg-lemony text-navy hover:bg-lemony/80 border-lemony/40 card-hover"
+                : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+            }`}
+            title="Generar mini informe ejecutivo de cronograma y avances en formato PDF / Imprimible"
+          >
+            <FileText className="w-3.5 h-3.5 text-navy" />
+            <span>Mini Informe PDF</span>
+          </button>
+
           {/* Copy Consolidated Flash Report for WhatsApp/Teams */}
           <button
             type="button"
@@ -399,6 +418,13 @@ export const ProjectTable = memo(function ProjectTable({
           <span className="hidden sm:inline">GAP = Avance Real − Avance Programado</span>
         </div>
       </div>
+
+      <ScheduleReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        projects={projects}
+        portfolioName={portfolioName}
+      />
     </div>
   );
 });

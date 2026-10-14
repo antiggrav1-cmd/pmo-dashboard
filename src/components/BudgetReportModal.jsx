@@ -4,22 +4,17 @@ import {
   X,
   Printer,
   FileText,
-  DollarSign,
   TrendingUp,
   AlertTriangle,
-  Wallet,
   Percent,
   Download,
   Copy,
   Check,
   Loader2,
-  Calendar,
-  Layers,
-  ArrowUpRight,
   ShieldAlert
 } from "lucide-react";
 import { toPng } from "html-to-image";
-import { formatCurrencyCop, formatCurrencyUsd } from "../utils/calculations";
+import { formatCurrencyCop } from "../utils/calculations";
 import { getPortfolioBudgetMetrics, getProjectBudgetMetrics } from "../utils/budgetCalculations";
 
 const statusStyle = {

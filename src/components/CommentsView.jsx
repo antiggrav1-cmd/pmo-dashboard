@@ -17,12 +17,13 @@ import {
   Download,
   Copy,
   Check,
-  FileDown
+  FileDown,
+  FileText
 } from "lucide-react";
 import { formatDate, calculateGap } from "../utils/calculations";
 import { RESTRICTION_CATEGORIES, RESTRICTION_STATUSES, isCommentCompleted } from "../models/projectModel";
-
 import { RESTRICTION_STYLES, STATUS_STYLES } from "../constants/commentStyles";
+import { CommentsReportModal } from "./CommentsReportModal";
 
 
 function formatDateTime(isoString) {
@@ -173,6 +174,7 @@ export const CommentsView = memo(function CommentsView({
 
   // Modal states for Create / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     proyectoId: "",
@@ -728,6 +730,17 @@ export const CommentsView = memo(function CommentsView({
               </>
             )}
 
+            {/* Mini Informe PDF Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-lemony text-navy hover:bg-lemony/80 transition-all shadow-2xs cursor-pointer border border-lemony/40 card-hover"
+              title="Generar mini informe ejecutivo de observaciones y novedades en formato PDF / Imprimible"
+            >
+              <FileText className="w-3.5 h-3.5 text-navy" />
+              <span>Mini Informe PDF</span>
+            </button>
+
             {/* New Observation Button */}
             <button
               type="button"
@@ -1249,6 +1262,14 @@ export const CommentsView = memo(function CommentsView({
           </div>
         </div>
       )}
+
+      <CommentsReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        projects={projects}
+        portfolioName={portfolioName}
+        selectedProjectId={selectedProjectId}
+      />
     </div>
   );
 });

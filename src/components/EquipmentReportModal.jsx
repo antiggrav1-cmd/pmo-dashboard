@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, memo } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Copy,
@@ -12,14 +13,13 @@ import {
   Box,
   Cpu,
   Zap,
-  CheckCircle2,
-  FileText,
-  Calendar,
   Layers,
   Search,
   Building2,
-  Activity
+  Printer,
+  Loader2
 } from "lucide-react";
+import { toPng } from "html-to-image";
 import {
   getEquipmentReportData,
   generateEquipmentReportText
@@ -27,7 +27,7 @@ import {
 import { formatDate } from "../utils/calculations";
 import { getEquipmentStatusStyle } from "../services/equipmentService";
 
-export function EquipmentReportModal({
+export const EquipmentReportModal = memo(function EquipmentReportModal({
   isOpen,
   onClose,
   projects = [],
@@ -36,6 +36,32 @@ export function EquipmentReportModal({
   const [activeTab, setActiveTab] = useState("visual"); // "visual" | "text"
   const [projectSearch, setProjectSearch] = useState("");
   const [copied, setCopied] = useState(false);
+  const [printOrientation, setPrintOrientation] = useState("landscape");
+  const [isExportingPng, setIsExportingPng] = useState(false);
+  const reportRef = useRef(null);
+
+  const reportDate = useMemo(() => {
+    return new Date().toLocaleDateString("es-CO", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+  }, []);
+
+  // Manage print class isolation on body
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("modal-open-printing");
+      if (printOrientation === "landscape") {
+        document.body.classList.add("print-landscape");
+      } else {
+        document.body.classList.remove("print-landscape");
+      }
+      return () => {
+        document.body.classList.remove("modal-open-printing", "print-landscape");
+      };
+    }
+  }, [isOpen, printOrientation]);
 
   // Keyboard navigation: Close on Escape
   useEffect(() => {
@@ -94,6 +120,40 @@ export function EquipmentReportModal({
     URL.revokeObjectURL(url);
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPng = async () => {
+    if (!reportRef.current) return;
+    setIsExportingPng(true);
+    try {
+      const node = reportRef.current;
+      const dataUrl = await toPng(node, {
+        quality: 0.98,
+        pixelRatio: 2.5,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        style: {
+          borderRadius: "0px",
+          margin: "0px"
+        }
+      });
+      const link = document.createElement("a");
+      const safeTitle = (portfolioName || "Portafolio")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]/g, "_");
+      link.download = `Mini_Informe_Equipos_${safeTitle}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Error al exportar PNG de equipos:", err);
+    } finally {
+      setIsExportingPng(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   const getEquipmentIcon = (typeId) => {
@@ -107,37 +167,20 @@ export function EquipmentReportModal({
     }
   };
 
-  const getRiskBadge = (riskLevel) => {
-    switch (riskLevel) {
-      case "CRITICAL":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800 border border-rose-200">
-            Crítico
-          </span>
-        );
-      case "HIGH":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-200">
-            Alto
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-yellow-100 text-yellow-800 border border-yellow-200">
-            Atención
-          </span>
-        );
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-navy/60 backdrop-blur-xs animate-in fade-in duration-150">
+  return createPortal(
+    <div
+      className={`report-print-overlay fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-slate-900/75 backdrop-blur-xs overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible ${
+        printOrientation === "landscape" ? "print-landscape" : "print-portrait"
+      }`}
+    >
       <div 
-        className="bg-white w-full max-w-5xl max-h-[94vh] rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className={`report-print-content bg-white w-full rounded-3xl shadow-2xl border border-slate-100 my-4 max-h-[95vh] overflow-y-auto flex flex-col print:max-w-none print:max-h-none print:shadow-none print:border-none print:p-0 print:my-0 print:overflow-visible ${
+          printOrientation === "landscape" ? "max-w-7xl" : "max-w-5xl"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="p-4 sm:p-5 bg-navy text-white flex flex-wrap items-center justify-between gap-3 border-b border-navy-light shrink-0">
+        {/* Top Control Bar (Hidden when printing) */}
+        <div className="p-4 sm:p-5 bg-navy text-white flex flex-wrap items-center justify-between gap-3 border-b border-navy-light shrink-0 print:hidden">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-white/10 border border-white/15">
               <Package className="w-6 h-6 text-lemony" />
@@ -145,20 +188,46 @@ export function EquipmentReportModal({
             <div>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-lemony text-navy">
-                  Mini Informe
+                  Mini Informe PDF
                 </span>
                 <span className="text-xs text-slate-300 font-semibold">
                   {reportData.portfolioName}
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-black tracking-tight text-white mt-0.5">
-                Estado Completo de Equipos, Alertas y Comentarios
+                Estado Completo de Equipos Principales y Suministros
               </h2>
             </div>
           </div>
 
           {/* Action buttons in header */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Orientation */}
+            <div className="flex items-center bg-white/10 p-1 rounded-xl border border-white/15 text-xs">
+              <button
+                type="button"
+                onClick={() => setPrintOrientation("landscape")}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  printOrientation === "landscape"
+                    ? "bg-white text-navy shadow-2xs"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                Horizontal (Recomendado)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrintOrientation("portrait")}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  printOrientation === "portrait"
+                    ? "bg-white text-navy shadow-2xs"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                Vertical
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={handleCopy}
@@ -185,6 +254,27 @@ export function EquipmentReportModal({
 
             <button
               type="button"
+              onClick={handleDownloadPng}
+              disabled={isExportingPng}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              title="Descargar snapshot en imagen PNG"
+            >
+              {isExportingPng ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              <span>{isExportingPng ? "Generando..." : "Descargar PNG"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-black bg-lemony text-navy hover:bg-lemony/80 transition-all cursor-pointer shadow-xs"
+              title="Imprimir o guardar como documento PDF"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Imprimir / PDF</span>
+            </button>
+
+            <button
+              type="button"
               onClick={onClose}
               className="p-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors ml-1 cursor-pointer"
               title="Cerrar modal"
@@ -194,8 +284,8 @@ export function EquipmentReportModal({
           </div>
         </div>
 
-        {/* Tab Selector Toolbar */}
-        <div className="px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        {/* Tab Selector Toolbar (Hidden when printing) */}
+        <div className="px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0 print:hidden">
           <div className="flex items-center gap-1 bg-slate-200/70 p-1 rounded-xl">
             <button
               type="button"
@@ -206,7 +296,7 @@ export function EquipmentReportModal({
                   : "text-slate-600 hover:text-navy"
               }`}
             >
-              📊 Vista Resumen
+              📊 Vista Resumen (Imprimible)
             </button>
             <button
               type="button"
@@ -234,13 +324,70 @@ export function EquipmentReportModal({
           </div>
         </div>
 
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        {/* Printable Canvas */}
+        <div ref={reportRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 print:p-0 print:space-y-4 print:overflow-visible">
           {activeTab === "visual" ? (
             <>
-              {/* SECTION: ALL EQUIPMENTS BY PROJECT (Todos los Equipos de Todos los Proyectos) */}
+              {/* Header Banner on Printable Area */}
+              <div className="p-5 rounded-2xl bg-navy text-white flex flex-wrap items-start justify-between gap-4 shadow-sm print:p-4 print:rounded-xl">
+                <div className="space-y-1 max-w-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-lemony text-navy">
+                      PMO CONTROL TRACKER
+                    </span>
+                    <span className="text-xs font-semibold text-nashville">
+                      Mini Informe de Equipos Principales y Suministros
+                    </span>
+                  </div>
+                  <h1 className="text-2xl font-black tracking-tight text-white mt-1 print:text-xl">
+                    {portfolioName || "Portafolio de Proyectos Solares"}
+                  </h1>
+                  <p className="text-xs text-slate-200 mt-0.5 leading-relaxed">
+                    Trazabilidad de la cadena de suministro para Paneles, Trackers, Shelter, Inversores y Reconectador frente a fechas FPO.
+                  </p>
+                </div>
+
+                <div className="text-right text-xs space-y-1 bg-white/10 p-2.5 rounded-xl border border-white/10 backdrop-blur-xs min-w-[190px] print:p-2">
+                  <p className="text-slate-300">
+                    Fecha de Emisión: <b className="text-white">{reportDate}</b>
+                  </p>
+                  <p className="text-slate-300">
+                    Proyectos: <b className="text-white">{reportData.projectCount}</b>
+                  </p>
+                  <p className="text-slate-300">
+                    Alertas Críticas:{" "}
+                    <b className={reportData.totalBottlenecks > 0 ? "text-rose-300" : "text-emerald-300"}>
+                      {reportData.totalBottlenecks}
+                    </b>
+                  </p>
+                </div>
+              </div>
+
+              {/* KPI Summary Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 print:gap-2">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Proyectos Monitoreados</span>
+                  <p className="text-xl font-black text-navy mt-1">{reportData.projectCount}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Equipos Auditados</span>
+                  <p className="text-xl font-black text-slate-800 mt-1">{reportData.projectCount * 5}</p>
+                </div>
+                <div className={`p-3 rounded-xl border flex flex-col justify-between ${
+                  reportData.totalBottlenecks > 0 ? "bg-rose-50 border-rose-300 text-rose-950" : "bg-emerald-50 border-emerald-200 text-emerald-950"
+                }`}>
+                  <span className="text-[10px] font-bold uppercase">Cuellos de Botella</span>
+                  <p className="text-xl font-black mt-1 text-rose-700">{reportData.totalBottlenecks}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 flex flex-col justify-between">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase">Observaciones Registradas</span>
+                  <p className="text-xl font-black text-amber-950 mt-1">{reportData.totalNotesCount}</p>
+                </div>
+              </div>
+
+              {/* SECTION: ALL EQUIPMENTS BY PROJECT */}
               <div className="space-y-3 pt-1">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
                   <h3 className="text-xs font-black uppercase tracking-wider text-navy flex items-center gap-1.5">
                     <Building2 className="w-4 h-4 text-lemony" />
                     <span>Estado de Todos los Equipos por Proyecto ({filteredProjectsEquipment.length})</span>
@@ -271,7 +418,7 @@ export function EquipmentReportModal({
                       return (
                         <div
                           key={p.projectId}
-                          className={`p-4 rounded-2xl border transition-all shadow-2xs space-y-3 ${
+                          className={`p-4 rounded-2xl border transition-all shadow-2xs space-y-3 print-avoid-break ${
                             hasBottleneck
                               ? "bg-amber-50/20 border-amber-200/80"
                               : "bg-white border-slate-200"
@@ -378,7 +525,7 @@ export function EquipmentReportModal({
               </div>
 
               {/* Comentarios y Observaciones de Equipos */}
-              <div className="space-y-3 pt-2">
+              <div className="space-y-3 pt-2 print-avoid-break">
                 <h3 className="text-xs font-black uppercase tracking-wider text-navy flex items-center gap-1.5">
                   <MessageSquareText className="w-4 h-4 text-amber-500" />
                   <span>Resumen de Comentarios y Observaciones ({reportData.totalNotesCount})</span>
@@ -393,7 +540,7 @@ export function EquipmentReportModal({
                     {reportData.equipmentNotes.map((proj) => (
                       <div
                         key={proj.projectId}
-                        className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2.5"
+                        className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2.5 print-avoid-break"
                       >
                         <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
                           <span className="text-xs font-black text-navy">{proj.projectName}</span>
@@ -437,6 +584,16 @@ export function EquipmentReportModal({
                   </div>
                 )}
               </div>
+
+              {/* Print Footer */}
+              <div className="print-footer pt-3 border-t border-slate-200 text-[10px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span>PMO Control Tracker • Mini Informe de Equipos Principales y Suministros</span>
+                </div>
+                <div>
+                  <span>Fecha de impresión: {new Date().toLocaleString("es-CO")}</span>
+                </div>
+              </div>
             </>
           ) : (
             /* Plain Text Mode for WhatsApp / Teams */
@@ -469,8 +626,8 @@ export function EquipmentReportModal({
           )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="p-3.5 px-5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        {/* Modal Footer (Hidden when printing) */}
+        <div className="p-3.5 px-5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0 print:hidden">
           <span className="text-[11px] text-slate-400">
             * Información calculada en tiempo real según la matriz de equipos y FPO de cada proyecto
           </span>
@@ -484,6 +641,7 @@ export function EquipmentReportModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
-}
+});

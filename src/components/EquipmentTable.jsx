@@ -220,11 +220,11 @@ export const EquipmentTable = memo(function EquipmentTable({
             <button
               type="button"
               onClick={() => setShowReportModal(true)}
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-navy hover:text-navy-dark px-2.5 py-1 rounded-lg bg-lemony hover:bg-lemony/80 transition-all shadow-2xs cursor-pointer border border-lemony/40"
-              title="Generar mini informe ejecutivo de equipos, alertas y comentarios"
+              className="inline-flex items-center gap-1.5 text-[11px] font-black text-navy hover:text-navy-dark px-2.5 py-1 rounded-lg bg-lemony hover:bg-lemony/80 transition-all shadow-2xs cursor-pointer border border-lemony/40 card-hover"
+              title="Generar mini informe ejecutivo de equipos principales en formato PDF / Imprimible"
             >
               <FileText className="w-3.5 h-3.5 text-navy" />
-              <span>Mini Informe</span>
+              <span>Mini Informe PDF</span>
             </button>
           </div>
 

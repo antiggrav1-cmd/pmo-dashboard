@@ -43,7 +43,8 @@ export function normalizePaymentMilestones(milestones) {
       saldoPendienteCop: m.saldoPendienteCop !== undefined && m.saldoPendienteCop !== "" ? Number(m.saldoPendienteCop) : (st === "Saldo Pendiente" ? valCop : undefined),
       saldoPendienteUsd: m.saldoPendienteUsd !== undefined && m.saldoPendienteUsd !== "" ? Number(m.saldoPendienteUsd) : (st === "Saldo Pendiente" ? valUsd : undefined),
       status: st,
-      submittedAt: m.submittedAt ? String(m.submittedAt).trim() : ""
+      submittedAt: m.submittedAt ? String(m.submittedAt).trim() : "",
+      notes: m.notes ? String(m.notes).trim() : ""
     };
   });
 }

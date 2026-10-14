@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from "react";
-import { AlertTriangle, CalendarClock, PackageX, Clock, ChevronDown } from "lucide-react";
+import { AlertTriangle, CalendarClock, PackageX, Clock, ChevronDown, FileText } from "lucide-react";
 import { 
   getCregRegulatoryRisk, 
   getFpoScheduleRisk, 
@@ -10,8 +10,10 @@ import {
 } from "../utils/calculations";
 import { getAllPortfolioBottlenecks, getEquipmentProcurementAlerts } from "../services/equipmentService";
 import { CountUpNumber } from "./CountUpNumber";
+import { AlertsReportModal } from "./AlertsReportModal";
 
-export const AlertsView = memo(function AlertsView({ projects = [] }) {
+export const AlertsView = memo(function AlertsView({ projects = [], portfolioName = "" }) {
+  const [isReportOpen, setIsReportOpen] = useState(false);
   // Collapsible state for each of the 4 sections
   const [openSections, setOpenSections] = useState({
     fpo: true,
@@ -108,6 +110,40 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
 
   return (
     <div className="space-y-5">
+      {/* Top Banner & Mini Informe PDF Trigger */}
+      <div className="glass-card rounded-2xl border border-slate-200/80 p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-rose-600 text-white shadow-xs">
+            <AlertTriangle className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs font-black uppercase tracking-wider text-navy leading-none">
+                Centro de Monitoreo de Alertas Críticas
+              </h2>
+              {portfolioName && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                  {portfolioName}
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Supervisión en tiempo real de riesgos FPO, CREG, cuellos de botella de equipos y facturación
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsReportOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black bg-lemony text-navy hover:bg-lemony/80 transition-all shadow-2xs cursor-pointer border border-lemony/40 card-hover"
+          title="Generar mini informe ejecutivo de alertas críticas en formato PDF / Imprimible"
+        >
+          <FileText className="w-3.5 h-3.5 text-navy" />
+          <span>Mini Informe PDF</span>
+        </button>
+      </div>
+
       {/* 4 Top Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Card 1: Riesgo FPO */}
@@ -455,6 +491,13 @@ export const AlertsView = memo(function AlertsView({ projects = [] }) {
           </section>
         </div>
       </div>
+
+      <AlertsReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        projects={projects}
+        portfolioName={portfolioName}
+      />
     </div>
   );
 });
