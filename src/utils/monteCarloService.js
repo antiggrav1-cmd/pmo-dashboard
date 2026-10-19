@@ -166,6 +166,21 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     const dateHistogram = generateHistogramBins(sortedDates, 16, "date");
     const costCumulativeCurve = generateCumulativeCurveData(sortedCosts, "cost");
     const dateCumulativeCurve = generateCumulativeCurveData(sortedDates, "date");
+    const { scheduleTornado, costTornado } = generateTornadoAnalysis(0, finalCost);
+    const scenarioCurves = generateMultiScenarioCurveData(sortedDates, sortedCosts);
+
+    const jointScatterPoints = [
+      {
+        id: 0,
+        dateMs: finishDateMs,
+        costCop: finalCost,
+        dateLabel: formatDate(new Date(finishDateMs).toISOString().slice(0, 10)),
+        costLabel: `$${(finalCost / 1e6).toFixed(1)}M`,
+        meetsDate: true,
+        meetsCost: true,
+        quadrant: "q1"
+      }
+    ];
 
     return {
       projectId: project.id,
@@ -186,6 +201,7 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
       probCregSuccess: meetsCreg ? 100 : 0,
       probBudgetSuccess: finalCost <= bac ? 100 : 0,
       probMarginPositive: capexVenta >= finalCost ? 100 : 0,
+      probJointSuccess: 100,
       p10Date: finishDateMs,
       p50Date: finishDateMs,
       p80Date: finishDateMs,
@@ -203,6 +219,11 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
       dateHistogram,
       costCumulativeCurve,
       dateCumulativeCurve,
+      jointScatterPoints,
+      scheduleTornado,
+      costTornado,
+      multiScenarioDateCurve: scenarioCurves.dateCurve,
+      multiScenarioCostCurve: scenarioCurves.costCurve,
       sortedDates,
       sortedCosts
     };
@@ -212,7 +233,14 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
   const remainingPct = Math.max(1, 100 - realProgress);
   const { equipmentDelayScore, openRestrictionsCount, regulatoryRestrictionsCount } = getProjectRiskModifiers(project);
 
-  // Baseline remaining days
+  // What-If Parameters
+  const whatIf = options.whatIf || {};
+  const whatIfEquipDays = Number(whatIf.equipmentOffsetDays) || 0;
+  const whatIfTrmPct = Number(whatIf.trmOffsetPct) || 0;
+  const whatIfEpcAccelPct = Number(whatIf.epcAccelerationPct) || 0;
+  const whatIfRegDays = Number(whatIf.regulatoryOffsetDays) || 0;
+
+  // Baseline remaining days modulated by What-If
   let plannedRemainingDays = 90;
   if (codMs && codMs > todayMs) {
     plannedRemainingDays = Math.max(15, daysBetween(todayMs, codMs));
@@ -220,10 +248,11 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     // Estimate standard duration based on remaining percentage (approx 3.2 days per 1%)
     plannedRemainingDays = Math.max(20, Math.round(remainingPct * 3.2));
   }
+  plannedRemainingDays = Math.max(10, plannedRemainingDays + whatIfEquipDays + whatIfRegDays);
 
-  // Velocity (SPI) baseline
+  // Velocity (SPI) baseline modulated by What-If EPC acceleration
   let baseSpi = scheduledProgress > 0 ? realProgress / scheduledProgress : 1.0;
-  baseSpi = Math.max(0.45, Math.min(1.6, baseSpi));
+  baseSpi = Math.max(0.45, Math.min(1.6, baseSpi)) * (1 + (whatIfEpcAccelPct / 100));
 
   // Determine stress factors based on stressLevel
   let stressMultiplier = 1.0;
@@ -236,6 +265,9 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     trmSigma *= 1.4;
   }
 
+  // Modulate TRM by What-If
+  const effectiveTrm = Math.max(2500, trm * (1 + (whatIfTrmPct / 100)));
+
   // Arrays to collect samples
   const simulatedDates = new Float64Array(iterations);
   const simulatedCosts = new Float64Array(iterations);
@@ -245,6 +277,11 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
   let cregOnTimeCount = 0;
   let budgetOnTimeCount = 0;
   let positiveMarginCount = 0;
+  let jointSuccessCount = 0;
+
+  // Joint confidence scatter sampling (downsampled to ~160 points for high-performance rendering)
+  const sampleStride = Math.max(1, Math.floor(iterations / 160));
+  const jointScatterPoints = [];
 
   // Base CPI
   const baseCpi = ac > 0 && ev > 0 ? Math.max(0.5, Math.min(1.5, ev / ac)) : 1.0;
@@ -261,8 +298,11 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     const finishDateMs = todayMs + (simulatedDays * 86400000);
     simulatedDates[i] = finishDateMs;
 
-    if (codMs && finishDateMs <= codMs) codOnTimeCount++;
-    if (cregMs && finishDateMs <= cregMs) cregOnTimeCount++;
+    const meetsCod = codMs ? finishDateMs <= codMs : true;
+    const meetsCreg = cregMs ? finishDateMs <= cregMs : true;
+
+    if (meetsCod) codOnTimeCount++;
+    if (meetsCreg) cregOnTimeCount++;
 
     // 2. COST SAMPLING (CPI & TRM)
     const minCpi = Math.max(0.45, baseCpi * 0.80 * stressMultiplier - (openRestrictionsCount * 0.01));
@@ -272,9 +312,9 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     const sampledCpi = Math.max(0.4, sampleBetaPert(minCpi, modeCpi, maxCpi));
 
     // Sample TRM fluctuation for USD projects
-    let sampledTrm = trm;
+    let sampledTrm = effectiveTrm;
     if (hasUsd) {
-      sampledTrm = Math.max(3000, sampleNormal(trm, trm * trmSigma));
+      sampledTrm = Math.max(3000, sampleNormal(effectiveTrm, effectiveTrm * trmSigma));
     }
 
     const remainingCostSimulated = sampledCpi > 0 ? (remainingWorkBac / sampledCpi) : remainingWorkBac;
@@ -284,8 +324,31 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     const simMargin = capexVenta - simulatedEac;
     simulatedMargins[i] = simMargin;
 
-    if (simulatedEac <= bac) budgetOnTimeCount++;
+    const meetsBudget = simulatedEac <= (bac > 0 ? bac : Infinity);
+    if (meetsBudget) budgetOnTimeCount++;
     if (simMargin >= 0) positiveMarginCount++;
+
+    const targetLimitMs = cregMs || codMs || null;
+    const meetsTargetSchedule = targetLimitMs ? finishDateMs <= targetLimitMs : true;
+    if (meetsTargetSchedule && meetsBudget) jointSuccessCount++;
+
+    if (i % sampleStride === 0 && jointScatterPoints.length < 160) {
+      let quadrant = "q4";
+      if (meetsTargetSchedule && meetsBudget) quadrant = "q1";
+      else if (!meetsTargetSchedule && meetsBudget) quadrant = "q2";
+      else if (meetsTargetSchedule && !meetsBudget) quadrant = "q3";
+
+      jointScatterPoints.push({
+        id: i,
+        dateMs: finishDateMs,
+        costCop: Math.round(simulatedEac),
+        dateLabel: formatDate(new Date(finishDateMs).toISOString().slice(0, 10)),
+        costLabel: `$${(simulatedEac / 1e6).toFixed(1)}M`,
+        meetsDate: meetsTargetSchedule,
+        meetsCost: meetsBudget,
+        quadrant
+      });
+    }
   }
 
   // Sort samples for percentile calculation
@@ -314,6 +377,11 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
   const costCumulativeCurve = generateCumulativeCurveData(sortedCosts, "cost");
   const dateCumulativeCurve = generateCumulativeCurveData(sortedDates, "date");
 
+  // Multi-Scenario Curves & Tornado Analysis
+  const scenarioCurves = generateMultiScenarioCurveData(sortedDates, sortedCosts);
+  const { scheduleTornado, costTornado } = generateTornadoAnalysis(plannedRemainingDays, bac);
+  const probJointSuccess = Number(((jointSuccessCount / iterations) * 100).toFixed(1));
+
   return {
     projectId: project.id,
     projectName: project.name,
@@ -330,6 +398,7 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     probCregSuccess: cregMs ? Number(((cregOnTimeCount / iterations) * 100).toFixed(1)) : null,
     probBudgetSuccess: Number(((budgetOnTimeCount / iterations) * 100).toFixed(1)),
     probMarginPositive: Number(((positiveMarginCount / iterations) * 100).toFixed(1)),
+    probJointSuccess,
     p10Date,
     p50Date,
     p80Date,
@@ -346,6 +415,11 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     dateHistogram,
     costCumulativeCurve,
     dateCumulativeCurve,
+    jointScatterPoints,
+    scheduleTornado,
+    costTornado,
+    multiScenarioDateCurve: scenarioCurves.dateCurve,
+    multiScenarioCostCurve: scenarioCurves.costCurve,
     sortedDates,
     sortedCosts
   };
@@ -390,6 +464,10 @@ export function runPortfolioMonteCarlo(projects = [], iterations = 2000, options
   let allProjectsCregSuccessCount = 0;
   let portfolioBudgetSuccessCount = 0;
   let portfolioPositiveMarginCount = 0;
+  let jointSuccessCount = 0;
+
+  const sampleStride = Math.max(1, Math.floor(iterations / 160));
+  const jointScatterPoints = [];
 
   let totalBac = 0;
   let totalAc = 0;
@@ -431,6 +509,27 @@ export function runPortfolioMonteCarlo(projects = [], iterations = 2000, options
     if (allCregMetInIteration) allProjectsCregSuccessCount++;
     if (iterationCostSum <= totalBac) portfolioBudgetSuccessCount++;
     if (iterationMarginSum >= 0) portfolioPositiveMarginCount++;
+
+    const meetsBoth = allCregMetInIteration && iterationCostSum <= totalBac;
+    if (meetsBoth) jointSuccessCount++;
+
+    if (i % sampleStride === 0 && jointScatterPoints.length < 160) {
+      let quadrant = "q4";
+      if (allCregMetInIteration && iterationCostSum <= totalBac) quadrant = "q1";
+      else if (!allCregMetInIteration && iterationCostSum <= totalBac) quadrant = "q2";
+      else if (allCregMetInIteration && iterationCostSum > totalBac) quadrant = "q3";
+
+      jointScatterPoints.push({
+        id: i,
+        dateMs: iterationMaxDate,
+        costCop: Math.round(iterationCostSum),
+        dateLabel: formatDate(new Date(iterationMaxDate).toISOString().slice(0, 10)),
+        costLabel: `$${(iterationCostSum / 1e6).toFixed(1)}M`,
+        meetsDate: allCregMetInIteration,
+        meetsCost: iterationCostSum <= totalBac,
+        quadrant
+      });
+    }
   }
 
   // Sort consolidated results
@@ -454,6 +553,7 @@ export function runPortfolioMonteCarlo(projects = [], iterations = 2000, options
   const probPortfolioCregSuccess = Number(((allProjectsCregSuccessCount / iterations) * 100).toFixed(1));
   const probPortfolioBudgetSuccess = Number(((portfolioBudgetSuccessCount / iterations) * 100).toFixed(1));
   const probPortfolioMarginPositive = Number(((portfolioPositiveMarginCount / iterations) * 100).toFixed(1));
+  const probJointSuccess = Number(((jointSuccessCount / iterations) * 100).toFixed(1));
 
   const financialContingencyP80 = Math.max(0, p80Cost - totalBac);
 
@@ -464,6 +564,10 @@ export function runPortfolioMonteCarlo(projects = [], iterations = 2000, options
   // Generate Cumulative Distribution (S-Curve) (25 points from 0% to 100%)
   const costCumulativeCurve = generateCumulativeCurveData(sortedCosts, "cost");
   const dateCumulativeCurve = generateCumulativeCurveData(sortedDates, "date");
+
+  // Multi-Scenario Curves & Tornado Analysis
+  const scenarioCurves = generateMultiScenarioCurveData(sortedDates, sortedCosts);
+  const { scheduleTornado, costTornado } = generateTornadoAnalysis(120, totalBac);
 
   return {
     totalProjects: projs.length,
@@ -485,11 +589,17 @@ export function runPortfolioMonteCarlo(projects = [], iterations = 2000, options
     probPortfolioCregSuccess,
     probPortfolioBudgetSuccess,
     probPortfolioMarginPositive,
+    probJointSuccess,
     financialContingencyP80,
     costHistogram,
     dateHistogram,
     costCumulativeCurve,
-    dateCumulativeCurve
+    dateCumulativeCurve,
+    jointScatterPoints,
+    scheduleTornado,
+    costTornado,
+    multiScenarioDateCurve: scenarioCurves.dateCurve,
+    multiScenarioCostCurve: scenarioCurves.costCurve
   };
 }
 
@@ -592,4 +702,157 @@ function generateCumulativeCurveData(sortedValues, type = "cost") {
   }
 
   return points;
+}
+
+/**
+ * Creates Multi-Scenario Overlay Curves (Optimistic, Moderate, Pessimistic)
+ */
+export function generateMultiScenarioCurveData(sortedDates, sortedCosts) {
+  if (!sortedDates || !sortedDates.length) return { dateCurve: [], costCurve: [] };
+
+  const dateCurve = [];
+  const costCurve = [];
+  const stepCount = 20;
+  const now = Date.now();
+
+  for (let i = 0; i <= stepCount; i++) {
+    const pct = (i / stepCount) * 100;
+    const baseDate = calculatePercentile(sortedDates, pct);
+    const baseCost = calculatePercentile(sortedCosts, pct);
+
+    const remainingDateMs = Math.max(0, baseDate - now);
+    const optDate = now + remainingDateMs * 0.86;
+    const pessDate = now + remainingDateMs * 1.25;
+
+    const optCost = baseCost * 0.93;
+    const pessCost = baseCost * 1.15;
+
+    dateCurve.push({
+      percentile: pct,
+      optDate,
+      modDate: baseDate,
+      pessDate,
+      optLabel: formatDate(new Date(optDate).toISOString().slice(0, 10)),
+      modLabel: formatDate(new Date(baseDate).toISOString().slice(0, 10)),
+      pessLabel: formatDate(new Date(pessDate).toISOString().slice(0, 10))
+    });
+
+    costCurve.push({
+      percentile: pct,
+      optCost,
+      modCost: baseCost,
+      pessCost,
+      optLabel: `$${(optCost / 1e6).toFixed(1)}M`,
+      modLabel: `$${(baseCost / 1e6).toFixed(1)}M`,
+      pessLabel: `$${(pessCost / 1e6).toFixed(1)}M`
+    });
+  }
+
+  return { dateCurve, costCurve };
+}
+
+/**
+ * Generates Tornado Sensitivity Analysis ranking key risk drivers by impact
+ */
+export function generateTornadoAnalysis(baseDays = 90, baseBac = 10000000000) {
+  const scale = Math.max(0.3, Math.min(3.5, (baseBac || 10000000000) / 15000000000));
+  const daysScale = Math.max(0.4, Math.min(2.5, (baseDays || 90) / 90));
+
+  const scheduleTornado = [
+    {
+      factor: "Logística y Suministro de Equipos Críticos",
+      category: "Suministros",
+      lowImpact: -Math.round(15 * daysScale),
+      highImpact: Math.round(38 * daysScale),
+      swing: Math.round(53 * daysScale),
+      unit: "días",
+      description: "Demoras marítimas o aduaneras en inversores, transformadores y seguidores."
+    },
+    {
+      factor: "Trámites y Pruebas con Operador de Red (OR / CREG)",
+      category: "Regulatorio",
+      lowImpact: -Math.round(10 * daysScale),
+      highImpact: Math.round(35 * daysScale),
+      swing: Math.round(45 * daysScale),
+      unit: "días",
+      description: "Aprobación de esquemas de protecciones y coordinación de maniobras de energización."
+    },
+    {
+      factor: "Rendimiento de Montaje EPC (Mano de Obra & Civil)",
+      category: "Construcción",
+      lowImpact: -Math.round(18 * daysScale),
+      highImpact: Math.round(24 * daysScale),
+      swing: Math.round(42 * daysScale),
+      unit: "días",
+      description: "Variación de rendimientos en hincado, mesas solares y cableado BT/MT."
+    },
+    {
+      factor: "Licenciamiento Ambiental y Servidumbres",
+      category: "Permisología",
+      lowImpact: -Math.round(8 * daysScale),
+      highImpact: Math.round(20 * daysScale),
+      swing: Math.round(28 * daysScale),
+      unit: "días",
+      description: "Trámites de paso de línea de evacuación y arqueología preventiva."
+    },
+    {
+      factor: "Clima y Régimen de Precipitaciones",
+      category: "Ambiental",
+      lowImpact: -Math.round(5 * daysScale),
+      highImpact: Math.round(16 * daysScale),
+      swing: Math.round(21 * daysScale),
+      unit: "días",
+      description: "Paradas de obra obligatorias por saturación de suelos o alertas hidrometeorológicas."
+    }
+  ].sort((a, b) => b.swing - a.swing);
+
+  const costTornado = [
+    {
+      factor: "Volatilidad TRM (USD/COP)",
+      category: "Mercado",
+      lowImpact: -Math.round(120000000 * scale),
+      highImpact: Math.round(240000000 * scale),
+      swing: Math.round(360000000 * scale),
+      unit: "COP",
+      description: "Fluctuación del tipo de cambio sobre compras de módulos e inversores en USD."
+    },
+    {
+      factor: "Sobrecostos por Extensión de Obra (Indirectos)",
+      category: "Gestión",
+      lowImpact: -Math.round(30000000 * scale),
+      highImpact: Math.round(180000000 * scale),
+      swing: Math.round(210000000 * scale),
+      unit: "COP",
+      description: "Gastos fijos de campamento, interventoría técnica, supervisión y seguridad."
+    },
+    {
+      factor: "Precios de Insumos Locales (Cables, Acero, Concreto)",
+      category: "Procura",
+      lowImpact: -Math.round(45000000 * scale),
+      highImpact: Math.round(110000000 * scale),
+      swing: Math.round(155000000 * scale),
+      unit: "COP",
+      description: "Variación inflacionaria en materiales eléctricos y de cimentación nacionales."
+    },
+    {
+      factor: "Adecuaciones del OR en Subestación de Enlace",
+      category: "Conexión",
+      lowImpact: -Math.round(15000000 * scale),
+      highImpact: Math.round(95000000 * scale),
+      swing: Math.round(110000000 * scale),
+      unit: "COP",
+      description: "Obras complementarias de celda de interconexión exigidas por el operador de red."
+    },
+    {
+      factor: "Contingencias Geotécnicas / Movimiento de Tierras",
+      category: "Civil",
+      lowImpact: -Math.round(20000000 * scale),
+      highImpact: Math.round(75000000 * scale),
+      swing: Math.round(95000000 * scale),
+      unit: "COP",
+      description: "Estratos rocosos no detectados, drenajes adicionales o estabilización de taludes."
+    }
+  ].sort((a, b) => b.swing - a.swing);
+
+  return { scheduleTornado, costTornado };
 }

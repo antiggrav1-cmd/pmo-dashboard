@@ -18,7 +18,14 @@ import {
   Clock,
   Sliders,
   ChevronRight,
-  Info
+  Info,
+  Target,
+  Activity,
+  RotateCcw,
+  Zap,
+  CheckCircle2,
+  HelpCircle,
+  ArrowRight
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -30,7 +37,12 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  ReferenceLine
+  ReferenceLine,
+  ScatterChart,
+  Scatter,
+  Cell,
+  ZAxis,
+  Legend
 } from "recharts";
 import { formatCurrencyCop, formatDate } from "../utils/calculations";
 import { runPortfolioMonteCarlo, simulateSingleProject } from "../utils/monteCarloService";
@@ -45,13 +57,39 @@ export const MonteCarloModal = memo(function MonteCarloModal({
   projects = [],
   portfolioName = ""
 }) {
-  const [activeTab, setActiveTab] = useState("schedule"); // "schedule" | "cost" | "matrix"
+  const [activeTab, setActiveTab] = useState("schedule"); // "schedule" | "cost" | "bivariate" | "tornado" | "whatif" | "matrix"
   const [selectedProjectId, setSelectedProjectId] = useState("all");
   const [iterations, setIterations] = useState(2500);
   const [stressLevel, setStressLevel] = useState("moderate"); // "optimistic" | "moderate" | "pessimistic"
   const [copied, setCopied] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simSeed, setSimSeed] = useState(0);
+
+  // Advanced Visualizations & What-If States
+  const [showOverlayScenario, setShowOverlayScenario] = useState(false);
+  const [tornadoMetric, setTornadoMetric] = useState("schedule"); // "schedule" | "cost"
+  const [whatIf, setWhatIf] = useState({
+    equipmentOffsetDays: 0,
+    trmOffsetPct: 0,
+    epcAccelerationPct: 0,
+    regulatoryOffsetDays: 0
+  });
+
+  const hasWhatIfActive = useMemo(() => {
+    return whatIf.equipmentOffsetDays !== 0 ||
+      whatIf.trmOffsetPct !== 0 ||
+      whatIf.epcAccelerationPct !== 0 ||
+      whatIf.regulatoryOffsetDays !== 0;
+  }, [whatIf]);
+
+  const handleResetWhatIf = () => {
+    setWhatIf({
+      equipmentOffsetDays: 0,
+      trmOffsetPct: 0,
+      epcAccelerationPct: 0,
+      regulatoryOffsetDays: 0
+    });
+  };
 
   // Manage body classes for clean print isolation
   useEffect(() => {
@@ -69,15 +107,23 @@ export const MonteCarloModal = memo(function MonteCarloModal({
     return projects.find((p) => String(p.id) === String(selectedProjectId)) || null;
   }, [projects, selectedProjectId]);
 
-  // Run Simulation
+  // Baseline Simulation (Without What-If adjustments, to calculate real-time Deltas)
+  const baseSimulationData = useMemo(() => {
+    if (!isOpen || !projects.length) return null;
+    if (selectedProject) {
+      return simulateSingleProject(selectedProject, iterations, { stressLevel });
+    }
+    return runPortfolioMonteCarlo(projects, iterations, { stressLevel });
+  }, [isOpen, projects, selectedProject, iterations, stressLevel, simSeed]);
+
+  // Active Simulation (With What-If applied)
   const simulationData = useMemo(() => {
-    // simSeed triggers recalculation
     if (!isOpen || !projects.length) return null;
 
-    const portfolioRes = runPortfolioMonteCarlo(projects, iterations, { stressLevel });
+    const portfolioRes = runPortfolioMonteCarlo(projects, iterations, { stressLevel, whatIf });
 
     if (selectedProject) {
-      const singleRes = simulateSingleProject(selectedProject, iterations, { stressLevel });
+      const singleRes = simulateSingleProject(selectedProject, iterations, { stressLevel, whatIf });
       return {
         isSingle: true,
         project: selectedProject,
@@ -90,7 +136,7 @@ export const MonteCarloModal = memo(function MonteCarloModal({
       isSingle: false,
       ...portfolioRes
     };
-  }, [isOpen, projects, selectedProject, iterations, stressLevel, simSeed]);
+  }, [isOpen, projects, selectedProject, iterations, stressLevel, whatIf, simSeed]);
 
   const handleRecalculate = () => {
     setIsSimulating(true);
@@ -245,31 +291,69 @@ export const MonteCarloModal = memo(function MonteCarloModal({
             </div>
 
             {/* Mode Switcher Tabs */}
-            <div className="flex items-center bg-slate-200/70 p-1 rounded-xl text-xs border border-slate-200">
+            <div className="flex flex-wrap items-center bg-slate-200/70 p-1 rounded-xl text-xs border border-slate-200 gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab("schedule")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   activeTab === "schedule" ? "bg-navy text-lemony shadow-xs" : "text-slate-600 hover:text-navy"
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5" />
                 <span>Plazos &amp; CREG</span>
               </button>
+
               <button
                 type="button"
                 onClick={() => setActiveTab("cost")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   activeTab === "cost" ? "bg-navy text-lemony shadow-xs" : "text-slate-600 hover:text-navy"
                 }`}
               >
                 <DollarSign className="w-3.5 h-3.5" />
                 <span>Costos &amp; Margen</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("bivariate")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  activeTab === "bivariate" ? "bg-navy text-lemony shadow-xs" : "text-slate-600 hover:text-navy"
+                }`}
+              >
+                <Target className="w-3.5 h-3.5" />
+                <span>Plazo vs. Costo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("tornado")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  activeTab === "tornado" ? "bg-navy text-lemony shadow-xs" : "text-slate-600 hover:text-navy"
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>Sensibilidad (Tornado)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("whatif")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer relative ${
+                  activeTab === "whatif" ? "bg-navy text-lemony shadow-xs" : "text-slate-600 hover:text-navy"
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>Simulador What-If</span>
+                {hasWhatIfActive && (
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Palancas What-If activas" />
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={() => setActiveTab("matrix")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
                   activeTab === "matrix" ? "bg-navy text-lemony shadow-xs" : "text-slate-600 hover:text-navy"
                 }`}
               >
@@ -485,42 +569,87 @@ export const MonteCarloModal = memo(function MonteCarloModal({
                         <TrendingUp className="w-4 h-4 text-navy" />
                         <span>Curva S de Probabilidad Acumulada de Plazos (CDF)</span>
                       </h4>
-                      <span className="text-[10px] text-slate-500 font-semibold">0% a 100%</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowOverlayScenario(!showOverlayScenario)}
+                          className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all border cursor-pointer ${
+                            showOverlayScenario
+                              ? "bg-navy text-lemony border-navy"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200"
+                          }`}
+                          title="Comparar Curva S del Escenario Optimista, Moderado y Estresado"
+                        >
+                          {showOverlayScenario ? "📈 Ocultar Abanico" : "📈 Abanico Multiescenario"}
+                        </button>
+                        <span className="text-[10px] text-slate-500 font-semibold">0% a 100%</span>
+                      </div>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
-                      Muestra la probabilidad acumulada de energizar el proyecto o portafolio en o antes de cada fecha.
+                      {showOverlayScenario
+                        ? "Abanico de incertidumbre comparando el escenario Optimista (verde), Moderado (azul) y Estresado (rojo)."
+                        : "Muestra la probabilidad acumulada de energizar el proyecto o portafolio en o antes de cada fecha."}
                     </p>
 
                     <div className="h-[250px] w-full pt-2">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={simulationData.dateCumulativeCurve || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="probGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#132644" stopOpacity={0.8} />
-                              <stop offset="95%" stopColor="#8cc3e1" stopOpacity={0.1} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                          <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} unit="%" />
-                          <Tooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                return (
-                                  <div className="bg-navy text-white text-xs p-2 rounded-xl shadow-lg border border-slate-700 space-y-0.5">
-                                    <p className="font-bold text-lemony">{data.label}</p>
-                                    <p>Probabilidad acumulada: <b>{data.percentile.toFixed(0)}%</b></p>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <ReferenceLine y={50} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: "P50", fill: "#f59e0b", fontSize: 10 }} />
-                          <ReferenceLine y={80} stroke="#10b981" strokeDasharray="3 3" label={{ value: "P80", fill: "#10b981", fontSize: 10 }} />
-                          <Area type="monotone" dataKey="percentile" stroke="#132644" strokeWidth={2.5} fillOpacity={1} fill="url(#probGradient)" />
-                        </AreaChart>
+                        {showOverlayScenario && simulationData.multiScenarioDateCurve ? (
+                          <AreaChart data={simulationData.multiScenarioDateCurve} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="modLabel" tick={{ fontSize: 9 }} />
+                            <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} unit="%" />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const d = payload[0].payload;
+                                  return (
+                                    <div className="bg-navy text-white text-xs p-2.5 rounded-xl shadow-lg border border-slate-700 space-y-1">
+                                      <p className="font-bold text-lemony">Nivel de Confianza: {d.percentile}%</p>
+                                      <p className="text-[11px] text-emerald-400">🟢 Optimista: <b>{d.optLabel}</b></p>
+                                      <p className="text-[11px] text-sky-300">🔵 Moderado (PERT): <b>{d.modLabel}</b></p>
+                                      <p className="text-[11px] text-rose-400">🔴 Estresado: <b>{d.pessLabel}</b></p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <ReferenceLine y={50} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: "P50", fill: "#f59e0b", fontSize: 10 }} />
+                            <ReferenceLine y={80} stroke="#10b981" strokeDasharray="3 3" label={{ value: "P80", fill: "#10b981", fontSize: 10 }} />
+                            <Area type="monotone" dataKey="percentile" stroke="#10b981" strokeWidth={1.8} strokeDasharray="3 3" fill="none" name="Optimista" />
+                            <Area type="monotone" dataKey="percentile" stroke="#132644" strokeWidth={2.8} fillOpacity={0.15} fill="#132644" name="Moderado" />
+                            <Area type="monotone" dataKey="percentile" stroke="#ef4444" strokeWidth={1.8} strokeDasharray="3 3" fill="none" name="Estresado" />
+                          </AreaChart>
+                        ) : (
+                          <AreaChart data={simulationData.dateCumulativeCurve || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="probGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#132644" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="#8cc3e1" stopOpacity={0.1} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} unit="%" />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="bg-navy text-white text-xs p-2 rounded-xl shadow-lg border border-slate-700 space-y-0.5">
+                                      <p className="font-bold text-lemony">{data.label}</p>
+                                      <p>Probabilidad acumulada: <b>{data.percentile.toFixed(0)}%</b></p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <ReferenceLine y={50} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: "P50", fill: "#f59e0b", fontSize: 10 }} />
+                            <ReferenceLine y={80} stroke="#10b981" strokeDasharray="3 3" label={{ value: "P80", fill: "#10b981", fontSize: 10 }} />
+                            <Area type="monotone" dataKey="percentile" stroke="#132644" strokeWidth={2.5} fillOpacity={1} fill="url(#probGradient)" />
+                          </AreaChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </div>
@@ -679,42 +808,87 @@ export const MonteCarloModal = memo(function MonteCarloModal({
                         <TrendingUp className="w-4 h-4 text-navy" />
                         <span>Curva S de Probabilidad de Costo Final (CDF)</span>
                       </h4>
-                      <span className="text-[10px] text-slate-500 font-semibold">0% a 100%</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowOverlayScenario(!showOverlayScenario)}
+                          className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all border cursor-pointer ${
+                            showOverlayScenario
+                              ? "bg-navy text-lemony border-navy"
+                              : "bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200"
+                          }`}
+                          title="Comparar Curva S de Costo del Escenario Optimista, Moderado y Estresado"
+                        >
+                          {showOverlayScenario ? "📈 Ocultar Abanico" : "📈 Abanico Multiescenario"}
+                        </button>
+                        <span className="text-[10px] text-slate-500 font-semibold">0% a 100%</span>
+                      </div>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
-                      Probabilidad acumulada de que el costo final del proyecto o portafolio sea menor o igual a cada valor.
+                      {showOverlayScenario
+                        ? "Abanico de dispersión comparando costo final Optimista (verde), Moderado (esmeralda) y Estresado (rojo)."
+                        : "Probabilidad acumulada de que el costo final del proyecto o portafolio sea menor o igual a cada valor."}
                     </p>
 
                     <div className="h-[250px] w-full pt-2">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={simulationData.costCumulativeCurve || []} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#059669" stopOpacity={0.8} />
-                              <stop offset="95%" stopColor="#a7f3d0" stopOpacity={0.1} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="label" tick={{ fontSize: 9 }} />
-                          <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} unit="%" />
-                          <Tooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                return (
-                                  <div className="bg-navy text-white text-xs p-2 rounded-xl shadow-lg border border-slate-700 space-y-0.5">
-                                    <p className="font-bold text-lemony">{data.label}</p>
-                                    <p>Nivel de confianza: <b>{data.percentile.toFixed(0)}%</b></p>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <ReferenceLine y={50} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: "P50", fill: "#f59e0b", fontSize: 10 }} />
-                          <ReferenceLine y={80} stroke="#10b981" strokeDasharray="3 3" label={{ value: "P80", fill: "#10b981", fontSize: 10 }} />
-                          <Area type="monotone" dataKey="percentile" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#costGradient)" />
-                        </AreaChart>
+                        {showOverlayScenario && simulationData.multiScenarioCostCurve ? (
+                          <AreaChart data={simulationData.multiScenarioCostCurve} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="modLabel" tick={{ fontSize: 9 }} />
+                            <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} unit="%" />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const d = payload[0].payload;
+                                  return (
+                                    <div className="bg-navy text-white text-xs p-2.5 rounded-xl shadow-lg border border-slate-700 space-y-1">
+                                      <p className="font-bold text-lemony">Nivel de Confianza: {d.percentile}%</p>
+                                      <p className="text-[11px] text-emerald-400">🟢 Optimista: <b>{d.optLabel}</b></p>
+                                      <p className="text-[11px] text-emerald-200">🔵 Moderado (EAC): <b>{d.modLabel}</b></p>
+                                      <p className="text-[11px] text-rose-400">🔴 Estresado: <b>{d.pessLabel}</b></p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <ReferenceLine y={50} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: "P50", fill: "#f59e0b", fontSize: 10 }} />
+                            <ReferenceLine y={80} stroke="#10b981" strokeDasharray="3 3" label={{ value: "P80", fill: "#10b981", fontSize: 10 }} />
+                            <Area type="monotone" dataKey="percentile" stroke="#10b981" strokeWidth={1.8} strokeDasharray="3 3" fill="none" name="Optimista" />
+                            <Area type="monotone" dataKey="percentile" stroke="#059669" strokeWidth={2.8} fillOpacity={0.15} fill="#059669" name="Moderado" />
+                            <Area type="monotone" dataKey="percentile" stroke="#ef4444" strokeWidth={1.8} strokeDasharray="3 3" fill="none" name="Estresado" />
+                          </AreaChart>
+                        ) : (
+                          <AreaChart data={simulationData.costCumulativeCurve || []} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#059669" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="#a7f3d0" stopOpacity={0.1} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="label" tick={{ fontSize: 9 }} />
+                            <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} unit="%" />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="bg-navy text-white text-xs p-2 rounded-xl shadow-lg border border-slate-700 space-y-0.5">
+                                      <p className="font-bold text-lemony">{data.label}</p>
+                                      <p>Nivel de confianza: <b>{data.percentile.toFixed(0)}%</b></p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <ReferenceLine y={50} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: "P50", fill: "#f59e0b", fontSize: 10 }} />
+                            <ReferenceLine y={80} stroke="#10b981" strokeDasharray="3 3" label={{ value: "P80", fill: "#10b981", fontSize: 10 }} />
+                            <Area type="monotone" dataKey="percentile" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#costGradient)" />
+                          </AreaChart>
+                        )}
                       </ResponsiveContainer>
                     </div>
                   </div>
@@ -762,7 +936,579 @@ export const MonteCarloModal = memo(function MonteCarloModal({
             )}
 
             {/* ========================================================== */}
-            {/* TAB 3: MATRIZ DETALLADA POR PROYECTO                       */}
+            {/* TAB 3: PLAZO VS COSTO (BIVARIADO / JOINT CONFIDENCE)       */}
+            {/* ========================================================== */}
+            {activeTab === "bivariate" && (
+              <div className="space-y-5">
+                {/* 4 Quadrant KPI Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <div className="p-4 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/70 flex flex-col justify-between shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-emerald-900 uppercase tracking-wider">
+                        Q1: Éxito Conjunto (Plazo &amp; Costo)
+                      </span>
+                      <Target className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-3xl font-black text-emerald-900">
+                        {simulationData.probJointSuccess}%
+                      </p>
+                      <p className="text-[11px] text-emerald-800 mt-1">
+                        Culmina en/antes de fecha límite <b>Y</b> dentro del presupuesto BAC.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-sky-200 bg-sky-50/60 flex flex-col justify-between shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-sky-900 uppercase tracking-wider">
+                        Q2: En Presupuesto pero Retrasado
+                      </span>
+                      <Clock className="w-4 h-4 text-sky-600" />
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-black text-sky-900">
+                        {(() => {
+                          const pts = simulationData.jointScatterPoints || [];
+                          const q2 = pts.filter((p) => p.quadrant === "q2").length;
+                          return pts.length ? `${((q2 / pts.length) * 100).toFixed(0)}%` : "0%";
+                        })()}
+                      </p>
+                      <p className="text-[11px] text-sky-800 mt-1">
+                        Costo final ≤ BAC pero excede la fecha regulatoria CREG o COD.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/60 flex flex-col justify-between shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider">
+                        Q3: En Plazo con Sobrecosto
+                      </span>
+                      <DollarSign className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-black text-amber-900">
+                        {(() => {
+                          const pts = simulationData.jointScatterPoints || [];
+                          const q3 = pts.filter((p) => p.quadrant === "q3").length;
+                          return pts.length ? `${((q3 / pts.length) * 100).toFixed(0)}%` : "0%";
+                        })()}
+                      </p>
+                      <p className="text-[11px] text-amber-800 mt-1">
+                        Cumple la fecha contractual pero incurre en costos superiores al BAC.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-rose-200 bg-rose-50/70 flex flex-col justify-between shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-rose-900 uppercase tracking-wider">
+                        Q4: Falla Doble (Retraso &amp; Sobrecosto)
+                      </span>
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-black text-rose-900">
+                        {(() => {
+                          const pts = simulationData.jointScatterPoints || [];
+                          const q4 = pts.filter((p) => p.quadrant === "q4").length;
+                          return pts.length ? `${((q4 / pts.length) * 100).toFixed(0)}%` : "0%";
+                        })()}
+                      </p>
+                      <p className="text-[11px] text-rose-800 mt-1">
+                        Escenario adverso con penalidades contractuales y exceso de CAPEX.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bivariate Scatter Chart */}
+                <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-navy flex items-center gap-1.5">
+                        <Target className="w-4 h-4 text-navy" />
+                        <span>Distribución Conjunta Bivariada: Fecha Fin vs. Costo Proyectado (EAC)</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Cada punto representa una corrida estocástica. Las líneas rojas delimitan el umbral de plazo y presupuesto.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold">
+                      <span className="inline-flex items-center gap-1.5 text-emerald-800">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Q1: Éxito Doble
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-sky-800">
+                        <span className="w-2.5 h-2.5 rounded-full bg-sky-500" /> Q2: Retraso en Presupuesto
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-amber-800">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Q3: En Plazo con Sobrecosto
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-rose-800">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Q4: Falla Doble
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="h-[320px] w-full pt-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis
+                          type="number"
+                          dataKey="dateMs"
+                          name="Fecha Fin"
+                          domain={["dataMin", "dataMax"]}
+                          tickFormatter={(ms) => formatDate(new Date(ms).toISOString().slice(0, 10))}
+                          tick={{ fontSize: 9 }}
+                        />
+                        <YAxis
+                          type="number"
+                          dataKey="costCop"
+                          name="Costo EAC"
+                          domain={["dataMin", "dataMax"]}
+                          tickFormatter={(c) => `$${(c / 1e6).toFixed(0)}M`}
+                          tick={{ fontSize: 9 }}
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload;
+                              return (
+                                <div className="bg-navy text-white text-xs p-2.5 rounded-xl shadow-lg border border-slate-700 space-y-1">
+                                  <p className="font-bold text-lemony">Corrida #{d.id}</p>
+                                  <p>📅 Fecha Fin: <b>{d.dateLabel}</b> {d.meetsDate ? "✅" : "❌"}</p>
+                                  <p>💰 Costo EAC: <b>{d.costLabel}</b> {d.meetsCost ? "✅" : "❌"}</p>
+                                  <p className="text-[10px] text-slate-300">
+                                    Cuadrante: <b>{d.quadrant.toUpperCase()}</b>
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        {/* Reference Limits */}
+                        {(simulationData.cregDate || simulationData.codDate || simulationData.p80Date) && (
+                          <ReferenceLine
+                            x={simulationData.cregDate || simulationData.codDate || simulationData.p80Date}
+                            stroke="#ef4444"
+                            strokeWidth={1.5}
+                            strokeDasharray="4 4"
+                            label={{ value: "Límite Plazo", fill: "#ef4444", fontSize: 9, position: "top" }}
+                          />
+                        )}
+                        {(simulationData.bac || simulationData.portfolioBac) > 0 && (
+                          <ReferenceLine
+                            y={simulationData.bac || simulationData.portfolioBac}
+                            stroke="#ef4444"
+                            strokeWidth={1.5}
+                            strokeDasharray="4 4"
+                            label={{ value: "Presupuesto (BAC)", fill: "#ef4444", fontSize: 9, position: "right" }}
+                          />
+                        )}
+                        <Scatter name="Corridas" data={simulationData.jointScatterPoints || []}>
+                          {(simulationData.jointScatterPoints || []).map((entry, idx) => {
+                            let color = "#ef4444";
+                            if (entry.quadrant === "q1") color = "#10b981";
+                            else if (entry.quadrant === "q2") color = "#0284c7";
+                            else if (entry.quadrant === "q3") color = "#f59e0b";
+                            return <Cell key={`dot-${idx}`} fill={color} fillOpacity={0.75} />;
+                          })}
+                        </Scatter>
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================== */}
+            {/* TAB 4: SENSIBILIDAD (DIAGRAMA TORNADO)                      */}
+            {/* ========================================================== */}
+            {activeTab === "tornado" && (
+              <div className="space-y-5">
+                {/* Metric Switcher Toolbar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200">
+                  <div>
+                    <h3 className="text-sm font-black text-navy flex items-center gap-1.5">
+                      <Activity className="w-4 h-4 text-navy" />
+                      <span>Diagrama Tornado de Sensibilidad de Riesgo</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Identifica y jerarquiza los factores de incertidumbre con mayor impacto oscilatorio (swing) sobre el resultado final.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center bg-slate-200/70 p-1 rounded-xl text-xs border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setTornadoMetric("schedule")}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                        tornadoMetric === "schedule" ? "bg-navy text-lemony shadow-xs" : "text-slate-600 hover:text-navy"
+                      }`}
+                    >
+                      📅 Sensibilidad de Plazos (Días)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTornadoMetric("cost")}
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                        tornadoMetric === "cost" ? "bg-navy text-lemony shadow-xs" : "text-slate-600 hover:text-navy"
+                      }`}
+                    >
+                      💰 Sensibilidad de Costos (COP)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Main Tornado Chart Card */}
+                <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600">
+                      Rango de Desviación Favorable (Izquierda) vs. Desfavorable (Derecha)
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      Ordenado por amplitud total de impacto
+                    </span>
+                  </div>
+
+                  <div className="h-[320px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        layout="vertical"
+                        data={tornadoMetric === "schedule" ? (simulationData.scheduleTornado || []) : (simulationData.costTornado || [])}
+                        margin={{ top: 10, right: 30, left: 160, bottom: 10 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                        <XAxis
+                          type="number"
+                          tick={{ fontSize: 9 }}
+                          tickFormatter={(v) => tornadoMetric === "schedule" ? `${v}d` : `$${(v / 1e6).toFixed(0)}M`}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="factor"
+                          tick={{ fontSize: 9, fontWeight: 600, fill: "#0f172a" }}
+                          width={155}
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const d = payload[0].payload;
+                              return (
+                                <div className="bg-navy text-white text-xs p-3 rounded-xl shadow-xl border border-slate-700 space-y-1.5 max-w-xs">
+                                  <p className="font-bold text-lemony">{d.factor}</p>
+                                  <p className="text-[10px] text-slate-300">{d.description}</p>
+                                  <div className="pt-1 border-t border-slate-700/80 grid grid-cols-2 gap-2 text-[11px]">
+                                    <span className="text-emerald-400">
+                                      🟢 Favorable: <b>{tornadoMetric === "schedule" ? `${d.lowImpact} días` : money(d.lowImpact)}</b>
+                                    </span>
+                                    <span className="text-rose-400">
+                                      🔴 Desfavorable: <b>{tornadoMetric === "schedule" ? `+${d.highImpact} días` : money(d.highImpact)}</b>
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] font-bold text-slate-200 pt-1">
+                                    Oscilación Total (Swing): {tornadoMetric === "schedule" ? `${d.swing} días` : money(d.swing)}
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <ReferenceLine x={0} stroke="#0f172a" strokeWidth={1.5} />
+                        <Bar dataKey="lowImpact" fill="#10b981" name="Impacto Favorable" radius={[4, 0, 0, 4]} />
+                        <Bar dataKey="highImpact" fill="#ef4444" name="Impacto Desfavorable" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Actionable Risk Mitigation Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-navy text-lemony text-[11px] font-black flex items-center justify-center">1</span>
+                      <h5 className="text-xs font-black text-navy">Riesgo #1: Suministros Críticos</h5>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      El mayor potencial de desvío reside en inversores y transformadores. Acciones: monitorear inspecciones FAT en fábrica y reservar slots de flete con 60 días de anticipación.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-navy text-lemony text-[11px] font-black flex items-center justify-center">2</span>
+                      <h5 className="text-xs font-black text-navy">Riesgo #2: Pruebas con el OR</h5>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Las observaciones en la matriz de protecciones generan colas de retraso de hasta 45 días. Acciones: radicar estudios eléctricos validados y agendar mesas de trabajo técnicas quincenales.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-navy text-lemony text-[11px] font-black flex items-center justify-center">3</span>
+                      <h5 className="text-xs font-black text-navy">Riesgo #3: Volatilidad TRM</h5>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Cubre hasta el 65% de la dispersión de costo en obras con componentes en USD. Acciones: evaluar coberturas cambiarias (Forwards) al formalizar órdenes de compra.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================== */}
+            {/* TAB 5: SIMULADOR INTERACTIVO WHAT-IF                       */}
+            {/* ========================================================== */}
+            {activeTab === "whatif" && (
+              <div className="space-y-5">
+                {/* Header Banner */}
+                <div className="p-4 rounded-2xl bg-navy text-white flex flex-wrap items-center justify-between gap-3 shadow-xs">
+                  <div>
+                    <h3 className="text-sm font-black text-white flex items-center gap-2">
+                      <Sliders className="w-4 h-4 text-lemony" />
+                      <span>Simulador Interactivo de Palancas de Decisión (What-If)</span>
+                    </h3>
+                    <p className="text-xs text-slate-200 mt-0.5">
+                      Ajusta las variables operativas en tiempo real para evaluar el impacto inmediato sobre los plazos P80 y la contingencia de costos.
+                    </p>
+                  </div>
+                  {hasWhatIfActive && (
+                    <button
+                      type="button"
+                      onClick={handleResetWhatIf}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Restablecer Palancas</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Live Impact Deltas Comparison Cards */}
+                {baseSimulationData && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    {/* Delta 1: Fecha P80 */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Fecha P80 (Compromiso)
+                      </span>
+                      <p className="text-2xl font-black text-navy mt-1">
+                        {dateStr(simulationData.isSingle ? simulationData.p80Date : simulationData.portfolioP80Date)}
+                      </p>
+                      {(() => {
+                        const baseDate = simulationData.isSingle ? baseSimulationData.p80Date : baseSimulationData.portfolioP80Date;
+                        const currDate = simulationData.isSingle ? simulationData.p80Date : simulationData.portfolioP80Date;
+                        const deltaDays = (baseDate && currDate) ? Math.round((currDate - baseDate) / 86400000) : 0;
+                        if (deltaDays === 0) return <span className="text-[11px] text-slate-400 mt-1 block">Sin variación vs base</span>;
+                        return (
+                          <span className={`text-[11px] font-bold mt-1 block ${deltaDays < 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {deltaDays < 0 ? `🟢 ${deltaDays} días de adelanto` : `🔴 +${deltaDays} días de retraso`}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Delta 2: Costo P80 */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Costo P80 Proyectado
+                      </span>
+                      <p className="text-2xl font-black text-slate-900 mt-1 truncate" title={money(simulationData.p80Cost)}>
+                        {money(simulationData.p80Cost)}
+                      </p>
+                      {(() => {
+                        const deltaCost = (simulationData.p80Cost || 0) - (baseSimulationData.p80Cost || 0);
+                        if (Math.abs(deltaCost) < 1000) return <span className="text-[11px] text-slate-400 mt-1 block">Sin variación vs base</span>;
+                        return (
+                          <span className={`text-[11px] font-bold mt-1 block truncate ${deltaCost < 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {deltaCost < 0 ? `🟢 -${money(Math.abs(deltaCost))}` : `🔴 +${money(deltaCost)}`}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Delta 3: Probabilidad CREG */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Probabilidad CREG
+                      </span>
+                      <p className="text-2xl font-black text-navy mt-1">
+                        {simulationData.isSingle
+                          ? (simulationData.probCregSuccess !== null ? `${simulationData.probCregSuccess}%` : "—")
+                          : `${simulationData.probPortfolioCregSuccess}%`}
+                      </p>
+                      {(() => {
+                        const baseProb = simulationData.isSingle ? baseSimulationData.probCregSuccess : baseSimulationData.probPortfolioCregSuccess;
+                        const currProb = simulationData.isSingle ? simulationData.probCregSuccess : simulationData.probPortfolioCregSuccess;
+                        if (baseProb === null || currProb === null) return <span className="text-[11px] text-slate-400 mt-1 block">Sin meta CREG</span>;
+                        const deltaProb = Number((currProb - baseProb).toFixed(1));
+                        if (deltaProb === 0) return <span className="text-[11px] text-slate-400 mt-1 block">Sin variación vs base</span>;
+                        return (
+                          <span className={`text-[11px] font-bold mt-1 block ${deltaProb > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {deltaProb > 0 ? `🟢 +${deltaProb}% de mejora` : `🔴 ${deltaProb}% de reducción`}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Delta 4: Probabilidad Conjunta */}
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                        Probabilidad Conjunta
+                      </span>
+                      <p className="text-2xl font-black text-navy mt-1">
+                        {simulationData.probJointSuccess}%
+                      </p>
+                      {(() => {
+                        const baseProb = baseSimulationData.probJointSuccess || 0;
+                        const currProb = simulationData.probJointSuccess || 0;
+                        const deltaProb = Number((currProb - baseProb).toFixed(1));
+                        if (deltaProb === 0) return <span className="text-[11px] text-slate-400 mt-1 block">Sin variación vs base</span>;
+                        return (
+                          <span className={`text-[11px] font-bold mt-1 block ${deltaProb > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            {deltaProb > 0 ? `🟢 +${deltaProb}%` : `🔴 ${deltaProb}%`}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4 Interactive Sliders Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Slider 1: Suministro de Equipos Críticos */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-navy">
+                        <span>🚢 Logística / Suministro de Equipos</span>
+                      </div>
+                      <span className={`text-xs font-black px-2 py-0.5 rounded-md ${
+                        whatIf.equipmentOffsetDays < 0 ? "bg-emerald-100 text-emerald-800" : whatIf.equipmentOffsetDays > 0 ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-700"
+                      }`}>
+                        {whatIf.equipmentOffsetDays > 0 ? `+${whatIf.equipmentOffsetDays} días` : `${whatIf.equipmentOffsetDays} días`}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-30}
+                      max={60}
+                      step={5}
+                      value={whatIf.equipmentOffsetDays}
+                      onChange={(e) => setWhatIf({ ...whatIf, equipmentOffsetDays: Number(e.target.value) })}
+                      className="w-full accent-navy cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
+                      <span>-30d (Flete Aéreo / Adelanto)</span>
+                      <span>0d (Base)</span>
+                      <span>+60d (Atraso Marítimo)</span>
+                    </div>
+                  </div>
+
+                  {/* Slider 2: Volatilidad / Ajuste de TRM */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-navy">
+                        <span>💵 Choque / Ajuste de TRM (USD/COP)</span>
+                      </div>
+                      <span className={`text-xs font-black px-2 py-0.5 rounded-md ${
+                        whatIf.trmOffsetPct < 0 ? "bg-emerald-100 text-emerald-800" : whatIf.trmOffsetPct > 0 ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-700"
+                      }`}>
+                        {whatIf.trmOffsetPct > 0 ? `+${whatIf.trmOffsetPct}%` : `${whatIf.trmOffsetPct}%`}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-15}
+                      max={25}
+                      step={2.5}
+                      value={whatIf.trmOffsetPct}
+                      onChange={(e) => setWhatIf({ ...whatIf, trmOffsetPct: Number(e.target.value) })}
+                      className="w-full accent-navy cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
+                      <span>-15% (Revaluación Peso)</span>
+                      <span>0% (TRM Actual)</span>
+                      <span>+25% (Devaluación Severa)</span>
+                    </div>
+                  </div>
+
+                  {/* Slider 3: Aceleración EPC (Frentes & Turnos) */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-navy">
+                        <span>⚡ Rendimiento EPC / Frentes de Trabajo</span>
+                      </div>
+                      <span className={`text-xs font-black px-2 py-0.5 rounded-md ${
+                        whatIf.epcAccelerationPct > 0 ? "bg-emerald-100 text-emerald-800" : whatIf.epcAccelerationPct < 0 ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-700"
+                      }`}>
+                        {whatIf.epcAccelerationPct > 0 ? `+${whatIf.epcAccelerationPct}% (Acelerado)` : `${whatIf.epcAccelerationPct}%`}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-20}
+                      max={30}
+                      step={5}
+                      value={whatIf.epcAccelerationPct}
+                      onChange={(e) => setWhatIf({ ...whatIf, epcAccelerationPct: Number(e.target.value) })}
+                      className="w-full accent-navy cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
+                      <span>-20% (Menor cuadrilla)</span>
+                      <span>0% (Rendimiento Histórico)</span>
+                      <span>+30% (Turnos Dobles / 2 Frentes)</span>
+                    </div>
+                  </div>
+
+                  {/* Slider 4: Trámites y Pruebas con OR */}
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-navy">
+                        <span>🔌 Pruebas de Conexión con Operador de Red</span>
+                      </div>
+                      <span className={`text-xs font-black px-2 py-0.5 rounded-md ${
+                        whatIf.regulatoryOffsetDays < 0 ? "bg-emerald-100 text-emerald-800" : whatIf.regulatoryOffsetDays > 0 ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-700"
+                      }`}>
+                        {whatIf.regulatoryOffsetDays > 0 ? `+${whatIf.regulatoryOffsetDays} días` : `${whatIf.regulatoryOffsetDays} días`}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-15}
+                      max={45}
+                      step={5}
+                      value={whatIf.regulatoryOffsetDays}
+                      onChange={(e) => setWhatIf({ ...whatIf, regulatoryOffsetDays: Number(e.target.value) })}
+                      className="w-full accent-navy cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 font-semibold">
+                      <span>-15d (Aprobación Rápida)</span>
+                      <span>0d (Plazo Previsto)</span>
+                      <span>+45d (Observaciones Repetidas)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* What-If Strategic Recommendation */}
+                <div className="p-4 rounded-2xl border border-navy/20 bg-navy/5 flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-navy shrink-0 mt-0.5" />
+                  <div className="text-xs text-navy space-y-1">
+                    <p className="font-black">Recomendación Táctica para Comités de Decisión:</p>
+                    <p className="text-slate-700 leading-relaxed">
+                      Utiliza estas palancas en comités directivos para negociar con el contratista EPC. Por ejemplo, si un atraso de 30 días en inversores se neutraliza activando un segundo frente de trabajo (+15% en rendimiento), evalúa si el costo adicional de cuadrillas es inferior a la penalidad diaria por retraso CREG.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================== */}
+            {/* TAB 6: MATRIZ DETALLADA POR PROYECTO                       */}
             {/* ========================================================== */}
             {activeTab === "matrix" && (
               <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs">
