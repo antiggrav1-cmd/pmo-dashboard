@@ -52,7 +52,14 @@ export function sampleBetaPert(min, mode, max, gamma = 4) {
  */
 function parseDateToMs(dateStr) {
   if (!dateStr) return null;
-  const d = new Date(dateStr);
+  if (typeof dateStr === "number") return isNaN(dateStr) ? null : dateStr;
+  const str = String(dateStr).trim();
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const d = new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
+    return isNaN(d.getTime()) ? null : d.getTime();
+  }
+  const d = new Date(str);
   const time = d.getTime();
   return isNaN(time) ? null : time;
 }
@@ -147,32 +154,57 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
 
   // If already connected/completed
   if (isCompleted) {
-    const simulatedDuration = 0;
     const finishDateMs = project.gridConnectionDate ? parseDateToMs(project.gridConnectionDate) || todayMs : todayMs;
     const meetsCod = codMs ? finishDateMs <= codMs : true;
     const meetsCreg = cregMs ? finishDateMs <= cregMs : true;
+    const finalCost = ac > 0 ? ac : bac;
+    const sortedDates = Array(iterations).fill(finishDateMs);
+    const sortedCosts = Array(iterations).fill(finalCost);
+    const sortedMargins = Array(iterations).fill(capexVenta - finalCost);
+
+    const costHistogram = generateHistogramBins(sortedCosts, 16, "cost");
+    const dateHistogram = generateHistogramBins(sortedDates, 16, "date");
+    const costCumulativeCurve = generateCumulativeCurveData(sortedCosts, "cost");
+    const dateCumulativeCurve = generateCumulativeCurveData(sortedDates, "date");
 
     return {
       projectId: project.id,
       projectName: project.name,
       isCompleted: true,
       iterations,
-      simulatedDates: Array(iterations).fill(finishDateMs),
-      simulatedCosts: Array(iterations).fill(ac > 0 ? ac : bac),
-      simulatedMargins: Array(iterations).fill(capexVenta - (ac > 0 ? ac : bac)),
+      realProgress,
+      scheduledProgress,
+      bac,
+      ac: finalCost,
+      capexVenta,
+      codDate: codMs,
+      cregDate: cregMs,
+      simulatedDates: sortedDates,
+      simulatedCosts: sortedCosts,
+      simulatedMargins: sortedMargins,
       probCodSuccess: meetsCod ? 100 : 0,
       probCregSuccess: meetsCreg ? 100 : 0,
-      probBudgetSuccess: ac <= bac ? 100 : 0,
-      probMarginPositive: capexVenta >= ac ? 100 : 0,
+      probBudgetSuccess: finalCost <= bac ? 100 : 0,
+      probMarginPositive: capexVenta >= finalCost ? 100 : 0,
       p10Date: finishDateMs,
       p50Date: finishDateMs,
       p80Date: finishDateMs,
       p90Date: finishDateMs,
-      p10Cost: ac > 0 ? ac : bac,
-      p50Cost: ac > 0 ? ac : bac,
-      p80Cost: ac > 0 ? ac : bac,
-      p90Cost: ac > 0 ? ac : bac,
-      expectedDelayDaysCreg: cregMs ? Math.max(0, daysBetween(cregMs, finishDateMs)) : 0
+      p10Cost: finalCost,
+      p50Cost: finalCost,
+      p80Cost: finalCost,
+      p90Cost: finalCost,
+      p50Margin: capexVenta - finalCost,
+      p80Margin: capexVenta - finalCost,
+      timeContingencyDaysP80: 0,
+      costContingencyCopP80: 0,
+      expectedDelayDaysCreg: cregMs ? Math.max(0, daysBetween(cregMs, finishDateMs)) : 0,
+      costHistogram,
+      dateHistogram,
+      costCumulativeCurve,
+      dateCumulativeCurve,
+      sortedDates,
+      sortedCosts
     };
   }
 
@@ -274,6 +306,14 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
   const p50Margin = calculatePercentile(sortedMargins, 50);
   const p80Margin = calculatePercentile(sortedMargins, 20); // Note: For margin, conservative is lower
 
+  // Generate Histogram Bins (16 buckets)
+  const costHistogram = generateHistogramBins(sortedCosts, 16, "cost");
+  const dateHistogram = generateHistogramBins(sortedDates, 16, "date");
+
+  // Generate Cumulative Distribution (S-Curve)
+  const costCumulativeCurve = generateCumulativeCurveData(sortedCosts, "cost");
+  const dateCumulativeCurve = generateCumulativeCurveData(sortedDates, "date");
+
   return {
     projectId: project.id,
     projectName: project.name,
@@ -302,6 +342,10 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
     p80Margin,
     timeContingencyDaysP80: codMs ? Math.max(0, daysBetween(codMs, p80Date)) : 0,
     costContingencyCopP80: Math.max(0, p80Cost - bac),
+    costHistogram,
+    dateHistogram,
+    costCumulativeCurve,
+    dateCumulativeCurve,
     sortedDates,
     sortedCosts
   };
@@ -459,8 +503,15 @@ function generateHistogramBins(sortedValues, binCount = 16, type = "cost") {
   const max = sortedValues[sortedValues.length - 1];
   const range = max - min;
   if (range <= 0) {
+    const singleLabel = type === "date"
+      ? (min ? formatDate(new Date(min).toISOString().slice(0, 10)) : "-")
+      : `$${(min / 1e6).toFixed(0)}M`;
     return [{
-      binLabel: type === "date" ? formatDate(new Date(min).toISOString()) : `$${(min / 1e6).toFixed(0)}M`,
+      binIndex: 0,
+      binStart: min,
+      binEnd: max,
+      binLabel: singleLabel,
+      label: singleLabel,
       count: sortedValues.length,
       frequency: 100
     }];
@@ -503,6 +554,22 @@ function generateHistogramBins(sortedValues, binCount = 16, type = "cost") {
  */
 function generateCumulativeCurveData(sortedValues, type = "cost") {
   if (!sortedValues || sortedValues.length === 0) return [];
+  const min = sortedValues[0];
+  const max = sortedValues[sortedValues.length - 1];
+  const range = max - min;
+
+  if (range <= 0) {
+    const singleLabel = type === "date"
+      ? (min ? formatDate(new Date(min).toISOString().slice(0, 10)) : "-")
+      : `$${(min / 1e6).toFixed(1)}M`;
+    return [
+      { percentile: 0, value: min, label: singleLabel, isP10: false, isP50: false, isP80: false, isP90: false },
+      { percentile: 50, value: min, label: singleLabel, isP10: false, isP50: true, isP80: false, isP90: false },
+      { percentile: 80, value: min, label: singleLabel, isP10: false, isP50: false, isP80: true, isP90: false },
+      { percentile: 100, value: min, label: singleLabel, isP10: false, isP50: false, isP80: false, isP90: false }
+    ];
+  }
+
   const points = [];
   const stepCount = 20;
 
@@ -510,7 +577,7 @@ function generateCumulativeCurveData(sortedValues, type = "cost") {
     const pct = (i / stepCount) * 100;
     const value = calculatePercentile(sortedValues, pct);
     const label = type === "date"
-      ? formatDate(new Date(value).toISOString().slice(0, 10))
+      ? (value ? formatDate(new Date(value).toISOString().slice(0, 10)) : "-")
       : `$${(value / 1e6).toFixed(1)}M`;
 
     points.push({

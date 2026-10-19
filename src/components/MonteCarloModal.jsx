@@ -66,7 +66,7 @@ export const MonteCarloModal = memo(function MonteCarloModal({
   // Selected project object if individual
   const selectedProject = useMemo(() => {
     if (selectedProjectId === "all") return null;
-    return projects.find((p) => p.id === selectedProjectId) || null;
+    return projects.find((p) => String(p.id) === String(selectedProjectId)) || null;
   }, [projects, selectedProjectId]);
 
   // Run Simulation
@@ -74,16 +74,18 @@ export const MonteCarloModal = memo(function MonteCarloModal({
     // simSeed triggers recalculation
     if (!isOpen || !projects.length) return null;
 
+    const portfolioRes = runPortfolioMonteCarlo(projects, iterations, { stressLevel });
+
     if (selectedProject) {
       const singleRes = simulateSingleProject(selectedProject, iterations, { stressLevel });
       return {
         isSingle: true,
         project: selectedProject,
+        projectResults: portfolioRes.projectResults,
         ...singleRes
       };
     }
 
-    const portfolioRes = runPortfolioMonteCarlo(projects, iterations, { stressLevel });
     return {
       isSingle: false,
       ...portfolioRes
@@ -439,6 +441,41 @@ export const MonteCarloModal = memo(function MonteCarloModal({
                   </div>
                 </div>
 
+                {/* Single Project Context Badge for Schedule */}
+                {simulationData.isSingle && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Avance Real vs Prog.</span>
+                        <span className="font-black text-navy">{simulationData.realProgress}% <span className="text-[10px] text-slate-500 font-normal">/ {simulationData.scheduledProgress}%</span></span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Fecha COD Contractual</span>
+                        <span className="font-bold text-slate-700">{dateStr(simulationData.codDate)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Límite Regulatorio CREG</span>
+                        <span className="font-bold text-rose-700">{dateStr(simulationData.cregDate)}</span>
+                      </div>
+                      {simulationData.timeContingencyDaysP80 > 0 && (
+                        <div>
+                          <span className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block">Desvío P80 vs COD</span>
+                          <span className="font-bold text-amber-800">+{simulationData.timeContingencyDaysP80} días</span>
+                        </div>
+                      )}
+                    </div>
+                    {simulationData.isCompleted ? (
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        ⚡ Proyecto Energizado / 100%
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-slate-500 font-medium">
+                        Simulado con variabilidad estocástica Beta-PERT
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* S-Curve & Histogram Chart Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Cumulative S-Curve (CDF) */}
@@ -602,6 +639,36 @@ export const MonteCarloModal = memo(function MonteCarloModal({
                     </div>
                   </div>
                 </div>
+
+                {/* Single Project Context Badge for Cost */}
+                {simulationData.isSingle && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Presupuesto Base (BAC)</span>
+                        <span className="font-black text-navy">{money(simulationData.bac)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Costo Actual (AC)</span>
+                        <span className="font-bold text-slate-700">{money(simulationData.ac)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">CAPEX Venta</span>
+                        <span className="font-bold text-slate-700">{money(simulationData.capexVenta)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Margen P50 Proyectado</span>
+                        <span className={`font-black ${simulationData.p50Margin >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                          {money(simulationData.p50Margin)}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-amber-800 font-bold uppercase tracking-wider block text-right">Reserva P80 Recomendada</span>
+                      <span className="font-black text-amber-900 block text-right">{money(simulationData.costContingencyCopP80)}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* S-Curve & Histogram Chart Section for Cost */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
