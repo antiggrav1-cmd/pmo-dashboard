@@ -6,7 +6,8 @@ import {
   FileText,
   LayoutDashboard,
   Cloud,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from "lucide-react";
 
 export const Navbar = memo(function Navbar({
@@ -14,6 +15,7 @@ export const Navbar = memo(function Navbar({
   onOpenImportModal,
   onExportExcel,
   onOpenExecutiveReport,
+  onOpenMonteCarlo,
   currentPortfolioName = "Portafolio",
   currentPortfolioAtc = "",
   isGlobalView = false,
@@ -84,6 +86,19 @@ export const Navbar = memo(function Navbar({
           >
             <FileText className="w-3.5 h-3.5 text-navy" />
             <span>Informe Ejecutivo</span>
+          </button>
+        )}
+
+        {/* Monte Carlo Risk Simulation */}
+        {!isGlobalView && onOpenMonteCarlo && (
+          <button
+            onClick={onOpenMonteCarlo}
+            type="button"
+            title="Simulación de Riesgo Monte Carlo (Plazos CREG, Costos EAC y Contingencias)"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black text-navy bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200 transition-all cursor-pointer shadow-2xs card-hover"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="hidden md:inline">Monte Carlo</span>
           </button>
         )}
 

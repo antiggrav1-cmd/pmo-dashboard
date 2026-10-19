@@ -13,6 +13,7 @@ import { PortfolioModal } from "./components/PortfolioModal";
 import { ExcelImportModal } from "./components/ExcelImportModal";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
+import { MonteCarloModal } from "./components/MonteCarloModal";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { usePortfolios } from "./hooks/usePortfolios";
@@ -78,6 +79,7 @@ export function App() {
   const portfolioModal = useModal();
   const importModal = useModal();
   const executiveReportModal = useModal();
+  const monteCarloModal = useModal();
   const projectDetailModal = useModal();
   const deleteModal = useModal();
 
@@ -173,6 +175,7 @@ export function App() {
           onOpenImportModal={() => importModal.open()}
           onExportExcel={handleExportExcel}
           onOpenExecutiveReport={() => executiveReportModal.open()}
+          onOpenMonteCarlo={() => monteCarloModal.open()}
           currentPortfolioName={viewMode === "ander-dashboard" ? "Dashboard General" : currentPortfolio?.name}
           currentPortfolioAtc={currentPortfolio?.atc}
           isGlobalView={viewMode === "ander-dashboard"}
@@ -188,6 +191,7 @@ export function App() {
               onSelectPortfolio={handleSelectPortfolio}
               onOpenCreatePortfolio={() => portfolioModal.open(null)}
               onOpenExecutiveReport={() => executiveReportModal.open({ scope: "global" })}
+              onOpenMonteCarlo={() => monteCarloModal.open()}
               onExportExcel={() => {
                 const dateStr = new Date().toISOString().slice(0, 10);
                 exportToExcel(portfolios, `Reporte_Global_PMO_${dateStr}.xlsx`);
@@ -367,6 +371,7 @@ export function App() {
                 portfolioName={currentPortfolio.name || ""}
                 onUpdateProject={updateProject} 
                 onOpenProjectDetail={(project) => projectDetailModal.open(project)}
+                onOpenMonteCarlo={() => monteCarloModal.open()}
               />
             </ErrorBoundary>
           )}
@@ -416,6 +421,13 @@ export function App() {
         initialProjectId={executiveReportModal.data?.projectId || ""}
         onUpdateProject={updateProject}
         onClose={executiveReportModal.close}
+      />
+
+      <MonteCarloModal
+        isOpen={monteCarloModal.isOpen}
+        projects={reportPortfolio.projects || []}
+        portfolioName={reportPortfolio.name}
+        onClose={monteCarloModal.close}
       />
 
       <ProjectDetailModal

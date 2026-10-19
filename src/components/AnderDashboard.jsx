@@ -28,6 +28,7 @@ export const AnderDashboard = memo(function AnderDashboard({
   onSelectPortfolio,
   onOpenCreatePortfolio: _onOpenCreatePortfolio,
   onOpenExecutiveReport,
+  onOpenMonteCarlo,
   onExportExcel
 }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -196,6 +197,17 @@ export const AnderDashboard = memo(function AnderDashboard({
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Informe Global</span>
+                </button>
+              )}
+              {onOpenMonteCarlo && (
+                <button
+                  type="button"
+                  onClick={onOpenMonteCarlo}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black text-indigo-950 bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-200 hover:to-purple-200 border border-indigo-300 shadow-md transition-all cursor-pointer card-hover"
+                  title="Simulación Monte Carlo Global de todos los portafolios"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-700" />
+                  <span>Monte Carlo Global</span>
                 </button>
               )}
               {onExportExcel && (

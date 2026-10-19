@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useState } from "react";
-import { DollarSign, TrendingUp, AlertTriangle, Wallet, SlidersHorizontal, User, Radio, Percent, FileText } from "lucide-react";
+import { DollarSign, TrendingUp, AlertTriangle, Wallet, SlidersHorizontal, User, Radio, Percent, FileText, Sparkles } from "lucide-react";
 import { formatCurrencyCop, formatCurrencyUsd } from "../utils/calculations";
 import { getPortfolioBudgetMetrics, getProjectBudgetMetrics } from "../utils/budgetCalculations";
 import { BudgetReportModal } from "./BudgetReportModal";
@@ -32,7 +32,8 @@ export const BudgetView = memo(function BudgetView({
   projects = [], 
   portfolioName = "",
   onUpdateProject,
-  onOpenProjectDetail 
+  onOpenProjectDetail,
+  onOpenMonteCarlo
 }) {
   const [selectedId, setSelectedId] = useState(() => projects[0]?.id || "");
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -98,6 +99,18 @@ export const BudgetView = memo(function BudgetView({
           <FileText className="w-3.5 h-3.5 text-navy" />
           <span>Mini Informe PDF</span>
         </button>
+
+        {onOpenMonteCarlo && (
+          <button
+            type="button"
+            onClick={onOpenMonteCarlo}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black text-indigo-950 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200 transition-all shadow-2xs cursor-pointer card-hover"
+            title="Simulación de Riesgo Monte Carlo (EAC, Contingencia Financiera y Margen)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Monte Carlo</span>
+          </button>
+        )}
 
         <span className="ml-auto px-3 py-1 rounded-full bg-nashville/20 text-navy text-xs font-bold">
           Próximo corte: Quincenal — cada 15 días
