@@ -464,6 +464,9 @@ export const MonteCarloModal = memo(function MonteCarloModal({
                       </p>
                       <p className="text-[11px] text-slate-500 mt-1">
                         {(() => {
+                          if (simulationData.isSingle && simulationData.isCompleted) {
+                            return "⚡ Proyecto Energizado — Riesgo CREG Extinguido";
+                          }
                           const prob = simulationData.isSingle ? simulationData.probCregSuccess : simulationData.probPortfolioCregSuccess;
                           if (prob === null) return "Sin fecha regulatoria CREG registrada";
                           if (prob >= 80) return "✅ Alta certidumbre de cumplimiento";

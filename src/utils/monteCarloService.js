@@ -156,7 +156,8 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
   if (isCompleted) {
     const finishDateMs = project.gridConnectionDate ? parseDateToMs(project.gridConnectionDate) || todayMs : todayMs;
     const meetsCod = codMs ? finishDateMs <= codMs : true;
-    const meetsCreg = cregMs ? finishDateMs <= cregMs : true;
+    // Si el proyecto ya está Energizado o Entregado, el hito de interconexión se cumplió y el riesgo CREG se extinguió
+    const meetsCreg = true;
     const finalCost = ac > 0 ? ac : bac;
     const sortedDates = Array(iterations).fill(finishDateMs);
     const sortedCosts = Array(iterations).fill(finalCost);
@@ -214,7 +215,7 @@ export function simulateSingleProject(project, iterations = 2000, options = {}) 
       p80Margin: capexVenta - finalCost,
       timeContingencyDaysP80: 0,
       costContingencyCopP80: 0,
-      expectedDelayDaysCreg: cregMs ? Math.max(0, daysBetween(cregMs, finishDateMs)) : 0,
+      expectedDelayDaysCreg: 0,
       costHistogram,
       dateHistogram,
       costCumulativeCurve,
@@ -497,7 +498,8 @@ export function runPortfolioMonteCarlo(projects = [], iterations = 2000, options
         iterationMaxDate = pDate;
       }
 
-      if (pRes.cregDate && pDate > pRes.cregDate) {
+      // Solo evaluar riesgo de incumplimiento CREG para proyectos que aún NO están energizados ni entregados
+      if (!pRes.isCompleted && pRes.cregDate && pDate > pRes.cregDate) {
         allCregMetInIteration = false;
       }
     }
