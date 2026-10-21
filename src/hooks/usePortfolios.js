@@ -262,6 +262,64 @@ export function usePortfolios() {
     });
   }, [currentPortfolio.id, commitPortfolioChange]);
 
+  // Move a project from one portfolio to another
+  const moveProject = useCallback((projectId, targetPortfolioId, sourcePortfolioId = null) => {
+    if (!projectId || !targetPortfolioId) return false;
+
+    const cleanProjectId = String(projectId).includes("::") ? projectId.split("::")[1] : projectId;
+
+    setPortfolios((prev) => {
+      let actualSourceId = sourcePortfolioId;
+      let projectToMove = null;
+
+      for (const port of prev) {
+        if (actualSourceId && port.id !== actualSourceId) continue;
+        const found = (port.projects || []).find(
+          (p) => p.id === cleanProjectId || p.id === projectId
+        );
+        if (found) {
+          actualSourceId = port.id;
+          projectToMove = { ...found, id: cleanProjectId };
+          break;
+        }
+      }
+
+      if (!projectToMove || actualSourceId === targetPortfolioId) {
+        return prev;
+      }
+
+      const next = prev.map((port) => {
+        if (port.id === actualSourceId) {
+          return {
+            ...port,
+            projects: (port.projects || []).filter(
+              (p) => p.id !== cleanProjectId && p.id !== projectId
+            )
+          };
+        }
+        if (port.id === targetPortfolioId) {
+          return {
+            ...port,
+            projects: [...(port.projects || []), projectToMove]
+          };
+        }
+        return port;
+      });
+
+      // Mark both affected portfolios as edited & dirty for storage & cloud sync
+      lastLocalEditTimestamps.current[actualSourceId] = Date.now();
+      lastLocalEditTimestamps.current[targetPortfolioId] = Date.now();
+      dirtyPortfolioIds.current.add(actualSourceId);
+      dirtyPortfolioIds.current.add(targetPortfolioId);
+
+      savePortfolios(next);
+      scheduleCloudSync();
+      return next;
+    });
+
+    return true;
+  }, [scheduleCloudSync]);
+
   // Create or update a portfolio
   const savePortfolio = useCallback((portfolioData) => {
     const normalized = normalizePortfolio(portfolioData);
@@ -342,6 +400,7 @@ export function usePortfolios() {
     updateProject,
     addProject,
     deleteProject,
+    moveProject,
     savePortfolio,
     deletePortfolio,
     importToCurrentPortfolio,

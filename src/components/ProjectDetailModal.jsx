@@ -9,7 +9,8 @@ import {
   Radio, 
   Coins, 
   Info,
-  Check
+  Check,
+  Briefcase
 } from "lucide-react";
 import { formatCurrencyCop, formatCurrencyUsd } from "../utils/calculations";
 import { ConnectionFlowStepper } from "./ConnectionFlowStepper";
@@ -35,11 +36,15 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
   isOpen,
   project,
   onSave,
-  onClose
+  onClose,
+  portfolios = [],
+  currentPortfolioId = "",
+  onMoveProject
 }) {
   const initFormData = (p) => ({
     name: p?.name || "",
     xm: p?.xm || "",
+    portfolioId: p?.portfolioId || currentPortfolioId || "",
     operadorRed: p?.operadorRed || p?.operator || "",
     manager: p?.manager || "",
     residenteCivil: p?.residenteCivil || "",
@@ -96,6 +101,16 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
     };
 
     onSave(updated);
+
+    if (
+      formData.portfolioId &&
+      formData.portfolioId !== currentPortfolioId &&
+      onMoveProject
+    ) {
+      const cleanId = String(project.id).includes("::") ? project.id.split("::")[1] : project.id;
+      onMoveProject(cleanId, formData.portfolioId, currentPortfolioId);
+    }
+
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
@@ -169,6 +184,30 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
                   placeholder="Ej: XM-SUN-042"
                   className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none"
                 />
+              </div>
+
+              {/* Portafolio al que pertenece */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                  <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Portafolio al que pertenece *</span>
+                </label>
+                <select
+                  value={formData.portfolioId}
+                  onChange={(e) => handleChange("portfolioId", e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-xl text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                >
+                  {portfolios.map((port) => (
+                    <option key={port.id} value={port.id}>
+                      {port.name} {port.code ? `(${port.code})` : ""}
+                    </option>
+                  ))}
+                </select>
+                {formData.portfolioId && currentPortfolioId && formData.portfolioId !== currentPortfolioId && (
+                  <span className="text-[10px] text-amber-700 font-bold block pt-0.5 animate-in fade-in">
+                    ⚠️ Al guardar, el proyecto se transferirá a este portafolio
+                  </span>
+                )}
               </div>
 
               {/* Operador de Red (OR) */}

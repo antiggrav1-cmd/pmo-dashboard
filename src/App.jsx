@@ -15,6 +15,7 @@ import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { ExecutiveReportModal } from "./components/ExecutiveReportModal";
 import { MonteCarloModal } from "./components/MonteCarloModal";
 import { ProjectDetailModal } from "./components/ProjectDetailModal";
+import { MoveProjectModal } from "./components/MoveProjectModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { usePortfolios } from "./hooks/usePortfolios";
 import { useModal } from "./hooks/useModal";
@@ -34,6 +35,7 @@ export function App() {
     updateProject,
     addProject,
     deleteProject,
+    moveProject,
     savePortfolio,
     deletePortfolio,
     importToCurrentPortfolio,
@@ -81,6 +83,7 @@ export function App() {
   const executiveReportModal = useModal();
   const monteCarloModal = useModal();
   const projectDetailModal = useModal();
+  const moveProjectModal = useModal();
   const deleteModal = useModal();
 
   // Switch to specific portfolio
@@ -338,6 +341,7 @@ export function App() {
                 onDeleteProject={handleDeleteProjectRequest}
                 onAddProject={() => addProject()}
                 onOpenProjectDetail={(project) => projectDetailModal.open(project)}
+                onOpenMoveProject={(project) => moveProjectModal.open(project)}
               />
             </ErrorBoundary>
           )}
@@ -433,8 +437,22 @@ export function App() {
       <ProjectDetailModal
         isOpen={projectDetailModal.isOpen}
         project={projectDetailModal.data}
+        portfolios={portfolios}
+        currentPortfolioId={currentPortfolio.id}
         onSave={updateProject}
+        onMoveProject={moveProject}
         onClose={projectDetailModal.close}
+      />
+
+      <MoveProjectModal
+        isOpen={moveProjectModal.isOpen}
+        project={moveProjectModal.data}
+        currentPortfolioId={currentPortfolio.id}
+        currentPortfolioName={currentPortfolio.name}
+        portfolios={portfolios}
+        onMoveProject={moveProject}
+        onSelectPortfolio={handleSelectPortfolio}
+        onClose={moveProjectModal.close}
       />
 
       <DeleteConfirmModal

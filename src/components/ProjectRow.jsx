@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState } from "react";
-import { Trash2, SlidersHorizontal, Copy, Check } from "lucide-react";
+import { Trash2, SlidersHorizontal, Copy, Check, FolderInput } from "lucide-react";
 import { XmCell } from "./cells/XmCell";
 import { EditableTextCell } from "./cells/EditableTextCell";
 import { EditableDateCell } from "./cells/EditableDateCell";
@@ -23,7 +23,8 @@ export const ProjectRow = memo(function ProjectRow({
   isEven = false,
   onUpdateProject,
   onDeleteProject,
-  onOpenProjectDetail
+  onOpenProjectDetail,
+  onOpenMoveProject
 }) {
   const [copiedSingle, setCopiedSingle] = useState(false);
 
@@ -187,7 +188,7 @@ export const ProjectRow = memo(function ProjectRow({
         <StatusBadge status={currentStatus} />
       </td>
 
-      {/* Action: Copy Single Report & Delete */}
+      {/* Action: Copy Single Report, Move Portfolio & Delete */}
       <td className="p-1.5 text-center">
         <div className="flex items-center justify-center gap-1">
           <button
@@ -206,6 +207,16 @@ export const ProjectRow = memo(function ProjectRow({
               <Copy className="w-3.5 h-3.5" />
             )}
           </button>
+          {onOpenMoveProject && (
+            <button
+              type="button"
+              onClick={() => onOpenMoveProject(project)}
+              className="p-1 text-slate-400 hover:text-navy hover:bg-slate-200/70 rounded transition-all cursor-pointer"
+              title={`Mover "${project.name || 'este proyecto'}" a otro portafolio`}
+            >
+              <FolderInput className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onDeleteProject(project)}

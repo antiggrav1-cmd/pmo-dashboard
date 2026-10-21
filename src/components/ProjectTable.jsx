@@ -43,7 +43,8 @@ export const ProjectTable = memo(function ProjectTable({
   onUpdateProject,
   onDeleteProject,
   onAddProject,
-  onOpenProjectDetail
+  onOpenProjectDetail,
+  onOpenMoveProject
 }) {
   const [copiedGeneral, setCopiedGeneral] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
@@ -379,8 +380,8 @@ export const ProjectTable = memo(function ProjectTable({
                 </div>
               </th>
 
-              {/* Acción: 70px */}
-              <th className="py-3 px-1.5 text-center w-[70px] text-white">
+              {/* Acción: 90px */}
+              <th className="py-3 px-1.5 text-center w-[90px] text-white">
                 <span>Acción</span>
               </th>
             </tr>
@@ -396,6 +397,7 @@ export const ProjectTable = memo(function ProjectTable({
                 onUpdateProject={onUpdateProject}
                 onDeleteProject={onDeleteProject}
                 onOpenProjectDetail={onOpenProjectDetail}
+                onOpenMoveProject={onOpenMoveProject}
               />
             ))}
           </tbody>
