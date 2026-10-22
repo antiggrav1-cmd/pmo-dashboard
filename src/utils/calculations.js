@@ -466,7 +466,7 @@ export function getProjectFinancialMetrics(project = {}) {
     totalUsd += vUsd;
     const st = (m.status || "").toLowerCase();
 
-    if (st.includes("cobrad")) {
+    if (st.includes("cobrad") || st.includes("pagad") || st === "pago") {
       cobradoCop += vCop;
       cobradoUsd += vUsd;
       cobradoCount++;

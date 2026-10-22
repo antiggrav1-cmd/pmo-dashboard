@@ -38,14 +38,16 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
   onOpenProjectDetail
 }) {
   const safeProjects = useMemo(() => Array.isArray(projects) ? projects.filter(Boolean) : [], [projects]);
-  const [selectedProjectId, setSelectedProjectId] = useState(() => safeProjects[0]?.id || "");
+  const defaultProj = safeProjects.find((p) => (p.paymentMilestones || []).length > 0) || safeProjects[0];
+  const [selectedProjectId, setSelectedProjectId] = useState(() => defaultProj?.id || "");
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [activeMilestoneCommentId, setActiveMilestoneCommentId] = useState(null);
 
   // Keep selectedProjectId in sync when portfolio or project list changes
   useEffect(() => {
     if (safeProjects.length > 0 && !safeProjects.some((p) => p.id === selectedProjectId)) {
-      setSelectedProjectId(safeProjects[0].id);
+      const firstWithMilestones = safeProjects.find((p) => (p.paymentMilestones || []).length > 0) || safeProjects[0];
+      setSelectedProjectId(firstWithMilestones.id);
     }
   }, [safeProjects, selectedProjectId]);
 
@@ -331,11 +333,17 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
               onChange={(e) => setSelectedProjectId(e.target.value)}
               className="px-3 py-1.5 bg-white border border-slate-300 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-xl text-xs font-bold text-slate-900 focus:outline-none cursor-pointer shadow-2xs"
             >
-              {safeProjects.map((p) => p && (
-                <option key={p.id} value={p.id}>
-                  {p.name || "Proyecto"} {p.connectionState ? `(${p.connectionState})` : p.gridConnected ? "(Energizado)" : ""}
-                </option>
-              ))}
+              {safeProjects.map((p) => {
+                if (!p) return null;
+                const mCount = (p.paymentMilestones || []).length;
+                const stateLabel = p.connectionState ? `[${p.connectionState}]` : p.gridConnected ? "[Energizado]" : "";
+                const countLabel = mCount > 0 ? `(${mCount} hitos)` : "(Sin hitos)";
+                return (
+                  <option key={p.id} value={p.id}>
+                    {p.name || "Proyecto"} {stateLabel} — {countLabel}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
