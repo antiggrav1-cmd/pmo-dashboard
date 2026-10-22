@@ -16,11 +16,11 @@ export function normalizePaymentMilestones(milestones) {
     return [];
   }
   return milestones.map((m, idx) => {
-    let st = m.status ? String(m.status).trim() : "Por cobrar";
+    let st = m.status ? String(m.status).trim() : (m.estado ? String(m.estado).trim() : "Por cobrar");
     const stLower = st.toLowerCase();
     if (stLower === "pendiente" || stLower === "facturado") {
       st = "Por cobrar";
-    } else if (stLower.includes("cobrad")) {
+    } else if (stLower.includes("cobrad") || stLower.includes("pagad") || stLower === "pago") {
       st = "Cobrado";
     } else if (stLower.includes("saldo pendiente")) {
       st = "Saldo Pendiente";
@@ -30,21 +30,24 @@ export function normalizePaymentMilestones(milestones) {
       st = "Por cobrar";
     }
 
-    const valCop = m.valueCop !== undefined && m.valueCop !== "" ? Number(m.valueCop) || 0 : 0;
-    const valUsd = m.valueUsd !== undefined && m.valueUsd !== "" ? Number(m.valueUsd) || 0 : 0;
+    const valCop = m.valueCop !== undefined && m.valueCop !== "" ? Number(m.valueCop) || 0 : (m.valorCop !== undefined ? Number(m.valorCop) || 0 : 0);
+    const valUsd = m.valueUsd !== undefined && m.valueUsd !== "" ? Number(m.valueUsd) || 0 : (m.valorUsd !== undefined ? Number(m.valorUsd) || 0 : 0);
+    const pctCop = m.percentageCop !== undefined && m.percentageCop !== "" ? Number(m.percentageCop) || 0 : (m.porcentajeCop !== undefined ? Number(m.porcentajeCop) || 0 : 0);
+    const pctUsd = m.percentageUsd !== undefined && m.percentageUsd !== "" ? Number(m.percentageUsd) || 0 : (m.porcentajeUsd !== undefined ? Number(m.porcentajeUsd) || 0 : 0);
+    const notesStr = m.notes ? String(m.notes).trim() : (m.observaciones ? String(m.observaciones).trim() : (m.comentario ? String(m.comentario).trim() : ""));
 
     return {
       id: m.id || `hm-${Date.now()}-${idx}`,
-      name: m.name ? String(m.name).trim() : `Hito ${idx + 1}`,
+      name: m.name ? String(m.name).trim() : (m.nombre ? String(m.nombre).trim() : `Hito ${idx + 1}`),
       valueCop: valCop,
       valueUsd: valUsd,
-      percentageCop: m.percentageCop !== undefined && m.percentageCop !== "" ? Number(m.percentageCop) || 0 : 0,
-      percentageUsd: m.percentageUsd !== undefined && m.percentageUsd !== "" ? Number(m.percentageUsd) || 0 : 0,
+      percentageCop: pctCop,
+      percentageUsd: pctUsd,
       saldoPendienteCop: m.saldoPendienteCop !== undefined && m.saldoPendienteCop !== "" ? Number(m.saldoPendienteCop) : (st === "Saldo Pendiente" ? valCop : undefined),
       saldoPendienteUsd: m.saldoPendienteUsd !== undefined && m.saldoPendienteUsd !== "" ? Number(m.saldoPendienteUsd) : (st === "Saldo Pendiente" ? valUsd : undefined),
       status: st,
-      submittedAt: m.submittedAt ? String(m.submittedAt).trim() : "",
-      notes: m.notes ? String(m.notes).trim() : ""
+      submittedAt: m.submittedAt ? String(m.submittedAt).trim() : (m.fecha ? String(m.fecha).trim() : ""),
+      notes: notesStr
     };
   });
 }
@@ -93,8 +96,8 @@ export function createProject(data = {}) {
     residenteElectrico: data.residenteElectrico ? String(data.residenteElectrico).trim() : "",
     operadorRed: data.operadorRed ? String(data.operadorRed).trim() : (data.operator ? String(data.operator).trim() : ""),
     equipment: normalizeEquipment(data.equipment),
-    paymentMilestones: normalizePaymentMilestones(data.paymentMilestones),
-    comments: normalizeComments(data.comments, data.id)
+    paymentMilestones: normalizePaymentMilestones(data.paymentMilestones || data.milestones || data.hitosPago || data.hitos),
+    comments: normalizeComments(data.comments || data.comentarios || data.restrictions || data.restricciones || data.observaciones, data.id)
   };
 }
 

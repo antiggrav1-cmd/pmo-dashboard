@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useCallback } from "react";
+import React, { useState, useMemo, memo, useCallback, useEffect } from "react";
 import {
   MessageSquare,
   Plus,
@@ -167,6 +167,13 @@ export const CommentsView = memo(function CommentsView({
   const [selectedCategory, setSelectedCategory] = useState("TODAS");
   const [selectedStatus, setSelectedStatus] = useState("TODOS");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Keep selectedProjectId in sync when active portfolio changes
+  useEffect(() => {
+    if (selectedProjectId && !projects.some((p) => p.id === selectedProjectId)) {
+      setSelectedProjectId("");
+    }
+  }, [projects, selectedProjectId]);
 
   // Copy feedback states
   const [copiedGeneral, setCopiedGeneral] = useState(false);

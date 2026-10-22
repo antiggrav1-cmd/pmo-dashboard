@@ -39,7 +39,8 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
   onClose,
   portfolios = [],
   currentPortfolioId = "",
-  onMoveProject
+  onMoveProject,
+  onSelectPortfolio
 }) {
   const initFormData = (p) => ({
     name: p?.name || "",
@@ -100,15 +101,21 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
       trmProyecto: formData.trmProyecto
     };
 
-    onSave(updated);
-
-    if (
+    const isMoving = Boolean(
       formData.portfolioId &&
+      currentPortfolioId &&
       formData.portfolioId !== currentPortfolioId &&
       onMoveProject
-    ) {
+    );
+
+    if (isMoving) {
       const cleanId = String(project.id).includes("::") ? project.id.split("::")[1] : project.id;
-      onMoveProject(cleanId, formData.portfolioId, currentPortfolioId);
+      onMoveProject(cleanId, formData.portfolioId, currentPortfolioId, updated);
+      if (onSelectPortfolio) {
+        onSelectPortfolio(formData.portfolioId);
+      }
+    } else {
+      onSave(updated);
     }
 
     setSavedSuccess(true);

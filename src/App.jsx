@@ -441,6 +441,7 @@ export function App() {
         currentPortfolioId={currentPortfolio.id}
         onSave={updateProject}
         onMoveProject={moveProject}
+        onSelectPortfolio={handleSelectPortfolio}
         onClose={projectDetailModal.close}
       />
 

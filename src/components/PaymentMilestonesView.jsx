@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo, useCallback } from "react";
+import React, { useState, useMemo, memo, useCallback, useEffect } from "react";
 import { 
   Plus, 
   Trash2, 
@@ -41,6 +41,13 @@ export const PaymentMilestonesView = memo(function PaymentMilestonesView({
   const [selectedProjectId, setSelectedProjectId] = useState(() => safeProjects[0]?.id || "");
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [activeMilestoneCommentId, setActiveMilestoneCommentId] = useState(null);
+
+  // Keep selectedProjectId in sync when portfolio or project list changes
+  useEffect(() => {
+    if (safeProjects.length > 0 && !safeProjects.some((p) => p.id === selectedProjectId)) {
+      setSelectedProjectId(safeProjects[0].id);
+    }
+  }, [safeProjects, selectedProjectId]);
 
   // Active project (fallback to first project if selectedId is from another portfolio)
   const currentProject = useMemo(() => {

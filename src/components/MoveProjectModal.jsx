@@ -54,10 +54,10 @@ export const MoveProjectModal = memo(function MoveProjectModal({
     if (!selectedTargetId) return;
 
     setIsSubmitting(true);
-    const sourceId = project.portfolioId || currentPortfolioId;
+    const sourceId = project.portfolioId || (String(project.id).includes("::") ? project.id.split("::")[0] : currentPortfolioId);
     const cleanId = String(project.id).includes("::") ? project.id.split("::")[1] : project.id;
 
-    const moved = onMoveProject(cleanId, selectedTargetId, sourceId);
+    const moved = onMoveProject(cleanId, selectedTargetId, sourceId, project);
 
     if (moved !== false) {
       setSuccessMessage(`Proyecto movido exitosamente a "${targetPort?.name || 'nuevo portafolio'}"`);

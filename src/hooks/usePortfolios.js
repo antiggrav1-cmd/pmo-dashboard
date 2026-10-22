@@ -54,6 +54,7 @@ export function usePortfolios() {
 
   // Helper to commit state locally with 0ms latency and schedule cloud push
   const commitPortfolioChange = useCallback((updatedPortfolios, affectedPortfolioId) => {
+    portfoliosRef.current = updatedPortfolios;
     if (affectedPortfolioId) {
       lastLocalEditTimestamps.current[affectedPortfolioId] = Date.now();
       dirtyPortfolioIds.current.add(affectedPortfolioId);
@@ -262,8 +263,8 @@ export function usePortfolios() {
     });
   }, [currentPortfolio.id, commitPortfolioChange]);
 
-  // Move a project from one portfolio to another
-  const moveProject = useCallback((projectId, targetPortfolioId, sourcePortfolioId = null) => {
+  // Move a project from one portfolio to another, strictly preserving all payment milestones, comments, and equipment
+  const moveProject = useCallback((projectId, targetPortfolioId, sourcePortfolioId = null, updatedProjectData = null) => {
     if (!projectId || !targetPortfolioId) return false;
 
     const cleanProjectId = String(projectId).includes("::") ? projectId.split("::")[1] : projectId;
@@ -272,15 +273,31 @@ export function usePortfolios() {
       let actualSourceId = sourcePortfolioId;
       let projectToMove = null;
 
-      for (const port of prev) {
-        if (actualSourceId && port.id !== actualSourceId) continue;
-        const found = (port.projects || []).find(
-          (p) => p.id === cleanProjectId || p.id === projectId
-        );
-        if (found) {
-          actualSourceId = port.id;
-          projectToMove = { ...found, id: cleanProjectId };
-          break;
+      // 1. First search in actualSourceId if provided
+      if (actualSourceId) {
+        const port = prev.find((p) => p.id === actualSourceId);
+        if (port) {
+          const found = (port.projects || []).find(
+            (p) => p.id === cleanProjectId || p.id === projectId || `${port.id}::${p.id}` === projectId
+          );
+          if (found) {
+            actualSourceId = port.id;
+            projectToMove = found;
+          }
+        }
+      }
+
+      // 2. Fallback: search across all portfolios if not found in actualSourceId
+      if (!projectToMove) {
+        for (const port of prev) {
+          const found = (port.projects || []).find(
+            (p) => p.id === cleanProjectId || p.id === projectId || `${port.id}::${p.id}` === projectId
+          );
+          if (found) {
+            actualSourceId = port.id;
+            projectToMove = found;
+            break;
+          }
         }
       }
 
@@ -288,23 +305,43 @@ export function usePortfolios() {
         return prev;
       }
 
+      // 3. Construct the clean moved project with full fidelity preservation of milestones & comments
+      const rawMilestones = updatedProjectData?.paymentMilestones || projectToMove.paymentMilestones || projectToMove.milestones || projectToMove.hitosPago || projectToMove.hitos || [];
+      const rawComments = updatedProjectData?.comments || projectToMove.comments || projectToMove.comentarios || projectToMove.restrictions || projectToMove.restricciones || [];
+      const rawEquipment = updatedProjectData?.equipment || projectToMove.equipment || {};
+
+      const cleanProject = {
+        ...projectToMove,
+        ...(updatedProjectData || {}),
+        id: cleanProjectId,
+        // Guarantee payment milestones are fully preserved with all statuses (Cobrado, En trámite, Por cobrar, etc.)
+        paymentMilestones: normalizePaymentMilestones(rawMilestones),
+        // Guarantee comments are fully preserved and mapped to cleanProjectId
+        comments: normalizeComments(rawComments, cleanProjectId),
+        // Guarantee equipment is preserved
+        equipment: normalizeEquipment(rawEquipment)
+      };
+
       const next = prev.map((port) => {
         if (port.id === actualSourceId) {
           return {
             ...port,
             projects: (port.projects || []).filter(
-              (p) => p.id !== cleanProjectId && p.id !== projectId
+              (p) => p.id !== cleanProjectId && p.id !== projectId && `${port.id}::${p.id}` !== projectId
             )
           };
         }
         if (port.id === targetPortfolioId) {
           return {
             ...port,
-            projects: [...(port.projects || []), projectToMove]
+            projects: [...(port.projects || []), cleanProject]
           };
         }
         return port;
       });
+
+      // Synchronously update portfoliosRef.current
+      portfoliosRef.current = next;
 
       // Mark both affected portfolios as edited & dirty for storage & cloud sync
       lastLocalEditTimestamps.current[actualSourceId] = Date.now();
