@@ -11,12 +11,27 @@ import {
   Check,
   Download,
   FileDown,
-  FileText
+  FileText,
+  LayoutGrid,
+  AlertOctagon,
+  AlertTriangle,
+  ShieldAlert,
+  DollarSign,
+  Wrench,
+  Zap,
+  RotateCcw,
+  Filter
 } from "lucide-react";
 import { ProjectRow } from "./ProjectRow";
 import { ScheduleReportModal } from "./ScheduleReportModal";
 import { useTableSort } from "../hooks/useTableSort";
-import { calculateGap, determineStatus, getProjectProgressAndStatus } from "../utils/calculations";
+import { 
+  calculateGap, 
+  determineStatus, 
+  getProjectProgressAndStatus,
+  getCregRegulatoryRisk,
+  getFpoScheduleRisk
+} from "../utils/calculations";
 import { 
   generatePortfolioScheduleSummaryText, 
   generateSingleProjectScheduleText 
@@ -47,6 +62,52 @@ export const ProjectTable = memo(function ProjectTable({
 }) {
   const [copiedGeneral, setCopiedGeneral] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [quickFilter, setQuickFilter] = useState("ALL");
+
+  // Dynamic quick filter counts
+  const quickFilterCounts = useMemo(() => {
+    const counts = {
+      ALL: projects.length,
+      CRITICAL_GAP: 0,
+      WARNING_GAP: 0,
+      REGULATORY_RISK: 0,
+      PENDING_BILLING: 0,
+      MONTAJE: 0,
+      ENERGIZADO: 0
+    };
+
+    projects.forEach((p) => {
+      const { gap, status } = getProjectProgressAndStatus(p);
+      const s = (status || "").toLowerCase();
+
+      if (s.includes("atrasad") || gap < -10) {
+        counts.CRITICAL_GAP++;
+      }
+      if (s.includes("rezago") || (gap < 0 && gap >= -10)) {
+        counts.WARNING_GAP++;
+      }
+      const creg = getCregRegulatoryRisk(p);
+      const fpo = getFpoScheduleRisk(p);
+      if (creg.riskLevel === "CRITICAL" || creg.riskLevel === "WARNING" || fpo.isAtRisk) {
+        counts.REGULATORY_RISK++;
+      }
+      const milestones = p.paymentMilestones || [];
+      if (milestones.some((m) => {
+        const st = (m.status || "").toLowerCase();
+        return st.includes("cobrar") || st.includes("trámite") || st.includes("tramite") || st.includes("saldo pendiente");
+      })) {
+        counts.PENDING_BILLING++;
+      }
+      if ((p.connectionState || "Montaje") === "Montaje") {
+        counts.MONTAJE++;
+      }
+      if (p.connectionState === "Energizado" || p.connectionState === "Entregado") {
+        counts.ENERGIZADO++;
+      }
+    });
+
+    return counts;
+  }, [projects]);
 
   // Copy full consolidated summary report for chat
   const handleCopyConsolidatedReport = useCallback(async () => {
@@ -99,7 +160,7 @@ export const ProjectTable = memo(function ProjectTable({
   const activeSearch = searchTerm;
   const activeStatus = statusFilter;
 
-  // Direct filtered list matching external search/status
+  // Direct filtered list matching external search, status, and quick filter pills
   const filteredProjects = useMemo(() => projects.filter((proj) => {
     const term = activeSearch.trim().toLowerCase();
     const matchSearch =
@@ -117,8 +178,35 @@ export const ProjectTable = memo(function ProjectTable({
       else if (activeStatus === "Adelantado") matchStatus = s.includes("adelantad") || g > 5;
       else if (activeStatus === "Completado") matchStatus = s.includes("completad") || Number(proj.realProgress) >= 100;
     }
-    return matchSearch && matchStatus;
-  }), [projects, activeSearch, activeStatus]);
+
+    let matchQuick = true;
+    if (quickFilter !== "ALL") {
+      const { gap, status } = getProjectProgressAndStatus(proj);
+      const s = (status || "").toLowerCase();
+
+      if (quickFilter === "CRITICAL_GAP") {
+        matchQuick = s.includes("atrasad") || gap < -10;
+      } else if (quickFilter === "WARNING_GAP") {
+        matchQuick = s.includes("rezago") || (gap < 0 && gap >= -10);
+      } else if (quickFilter === "REGULATORY_RISK") {
+        const creg = getCregRegulatoryRisk(proj);
+        const fpo = getFpoScheduleRisk(proj);
+        matchQuick = creg.riskLevel === "CRITICAL" || creg.riskLevel === "WARNING" || fpo.isAtRisk;
+      } else if (quickFilter === "PENDING_BILLING") {
+        const milestones = proj.paymentMilestones || [];
+        matchQuick = milestones.some((m) => {
+          const st = (m.status || "").toLowerCase();
+          return st.includes("cobrar") || st.includes("trámite") || st.includes("tramite") || st.includes("saldo pendiente");
+        });
+      } else if (quickFilter === "MONTAJE") {
+        matchQuick = (proj.connectionState || "Montaje") === "Montaje";
+      } else if (quickFilter === "ENERGIZADO") {
+        matchQuick = proj.connectionState === "Energizado" || proj.connectionState === "Entregado";
+      }
+    }
+
+    return matchSearch && matchStatus && matchQuick;
+  }), [projects, activeSearch, activeStatus, quickFilter]);
 
   const customGetters = useMemo(() => ({
     name: (p) => p.name || "",
@@ -252,6 +340,168 @@ export const ProjectTable = memo(function ProjectTable({
             <span className="sm:hidden">1 por proyecto</span>
           </button>
         </div>
+      </div>
+
+      {/* Smart Quick Filter Chips (Opción 3) */}
+      <div className="bg-slate-50/90 border-b border-slate-200/80 px-4 py-2.5 flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">
+            <Filter className="w-3.5 h-3.5 text-navy" />
+            <span>Filtro Rápido:</span>
+          </div>
+
+          {/* 1. Todos */}
+          <button
+            type="button"
+            onClick={() => setQuickFilter("ALL")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              quickFilter === "ALL"
+                ? "bg-navy text-lemony border-navy shadow-xs"
+                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Todos</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              quickFilter === "ALL" ? "bg-lemony text-navy" : "bg-slate-100 text-slate-600"
+            }`}>
+              {quickFilterCounts.ALL}
+            </span>
+          </button>
+
+          {/* 2. Atraso Crítico */}
+          <button
+            type="button"
+            onClick={() => setQuickFilter(quickFilter === "CRITICAL_GAP" ? "ALL" : "CRITICAL_GAP")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              quickFilter === "CRITICAL_GAP"
+                ? "bg-rose-600 text-white border-rose-700 shadow-xs"
+                : "bg-white text-rose-700 border-rose-200 hover:bg-rose-50"
+            }`}
+            title="Proyectos con GAP menor a -10% o estado Atrasado Crítico"
+          >
+            <AlertOctagon className="w-3.5 h-3.5" />
+            <span>Atraso Crítico</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              quickFilter === "CRITICAL_GAP" ? "bg-white text-rose-700" : "bg-rose-100 text-rose-700"
+            }`}>
+              {quickFilterCounts.CRITICAL_GAP}
+            </span>
+          </button>
+
+          {/* 3. Rezago Leve */}
+          <button
+            type="button"
+            onClick={() => setQuickFilter(quickFilter === "WARNING_GAP" ? "ALL" : "WARNING_GAP")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              quickFilter === "WARNING_GAP"
+                ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                : "bg-white text-amber-800 border-amber-200 hover:bg-amber-50"
+            }`}
+            title="Proyectos con GAP entre 0% y -10%"
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>Rezago Leve</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              quickFilter === "WARNING_GAP" ? "bg-white text-amber-700" : "bg-amber-100 text-amber-800"
+            }`}>
+              {quickFilterCounts.WARNING_GAP}
+            </span>
+          </button>
+
+          {/* 4. Riesgo CREG / FPO */}
+          <button
+            type="button"
+            onClick={() => setQuickFilter(quickFilter === "REGULATORY_RISK" ? "ALL" : "REGULATORY_RISK")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              quickFilter === "REGULATORY_RISK"
+                ? "bg-orange-600 text-white border-orange-700 shadow-xs"
+                : "bg-white text-orange-800 border-orange-200 hover:bg-orange-50"
+            }`}
+            title="Proyectos con riesgo de vencimiento CREG o FPO"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>Riesgo CREG/FPO</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              quickFilter === "REGULATORY_RISK" ? "bg-white text-orange-800" : "bg-orange-100 text-orange-800"
+            }`}>
+              {quickFilterCounts.REGULATORY_RISK}
+            </span>
+          </button>
+
+          {/* 5. Hitos por Cobrar */}
+          <button
+            type="button"
+            onClick={() => setQuickFilter(quickFilter === "PENDING_BILLING" ? "ALL" : "PENDING_BILLING")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              quickFilter === "PENDING_BILLING"
+                ? "bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                : "bg-white text-emerald-800 border-emerald-200 hover:bg-emerald-50"
+            }`}
+            title="Proyectos con hitos en trámite o pendientes de facturación"
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>Hitos por Cobrar</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              quickFilter === "PENDING_BILLING" ? "bg-white text-emerald-800" : "bg-emerald-100 text-emerald-800"
+            }`}>
+              {quickFilterCounts.PENDING_BILLING}
+            </span>
+          </button>
+
+          {/* 6. En Montaje */}
+          <button
+            type="button"
+            onClick={() => setQuickFilter(quickFilter === "MONTAJE" ? "ALL" : "MONTAJE")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              quickFilter === "MONTAJE"
+                ? "bg-sky-600 text-white border-sky-700 shadow-xs"
+                : "bg-white text-sky-800 border-sky-200 hover:bg-sky-50"
+            }`}
+            title="Proyectos en etapa de montaje"
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            <span>Montaje</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              quickFilter === "MONTAJE" ? "bg-white text-sky-800" : "bg-sky-100 text-sky-800"
+            }`}>
+              {quickFilterCounts.MONTAJE}
+            </span>
+          </button>
+
+          {/* 7. Energizados */}
+          <button
+            type="button"
+            onClick={() => setQuickFilter(quickFilter === "ENERGIZADO" ? "ALL" : "ENERGIZADO")}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+              quickFilter === "ENERGIZADO"
+                ? "bg-purple-600 text-white border-purple-700 shadow-xs"
+                : "bg-white text-purple-800 border-purple-200 hover:bg-purple-50"
+            }`}
+            title="Proyectos energizados o entregados"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Energizados</span>
+            <span className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              quickFilter === "ENERGIZADO" ? "bg-white text-purple-800" : "bg-purple-100 text-purple-800"
+            }`}>
+              {quickFilterCounts.ENERGIZADO}
+            </span>
+          </button>
+        </div>
+
+        {/* Reset filter button if active */}
+        {quickFilter !== "ALL" && (
+          <button
+            type="button"
+            onClick={() => setQuickFilter("ALL")}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-all cursor-pointer shrink-0"
+            title="Quitar filtro rápido y mostrar todos"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Restablecer</span>
+          </button>
+        )}
       </div>
 
       {/* Active Sort Bar (Visible when sorting is applied) */}

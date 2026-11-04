@@ -437,6 +437,8 @@ export function App() {
       <ProjectDetailModal
         isOpen={projectDetailModal.isOpen}
         project={projectDetailModal.data}
+        projects={currentPortfolio.projects || []}
+        onNavigateProject={(nextProject) => projectDetailModal.open(nextProject)}
         portfolios={portfolios}
         currentPortfolioId={currentPortfolio.id}
         onSave={updateProject}
