@@ -66,6 +66,13 @@ export function createProject(data = {}) {
   const gap = data.gap !== undefined ? Number(data.gap) : calculateGap(real, sched);
   const connState = data.connectionState || (data.gridConnected ? "Energizado" : "Ingeniería");
 
+  const obraReal = data.obraRealProgress !== undefined
+    ? (data.obraRealProgress === "" ? 0 : Number(data.obraRealProgress) || 0)
+    : (data.avanceObra !== undefined ? (data.avanceObra === "" ? 0 : Number(data.avanceObra) || 0) : 0);
+  const obraSched = data.obraScheduledProgress !== undefined
+    ? (data.obraScheduledProgress === "" ? 0 : Number(data.obraScheduledProgress) || 0)
+    : (data.avanceObraProg !== undefined ? (data.avanceObraProg === "" ? 0 : Number(data.avanceObraProg) || 0) : 0);
+
   return {
     id: data.id || `proj-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     xm: data.xm ? String(data.xm).trim() : "",
@@ -87,6 +94,8 @@ export function createProject(data = {}) {
     cpiAnterior: data.cpiAnterior !== undefined ? Number(data.cpiAnterior) || 0 : 0,
     realProgress: real,
     scheduledProgress: sched,
+    obraRealProgress: obraReal,
+    obraScheduledProgress: obraSched,
     gap: gap,
     previousGap: data.previousGap !== undefined ? Number(data.previousGap) : gap,
     status: determineStatus(gap, real),

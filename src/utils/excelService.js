@@ -20,6 +20,8 @@ export function exportToExcel(portfolioOrList, filename = "Reporte_PMO_Proyectos
       "CREG": formatDate(p.creg),
       "Avance Real (%)": p.realProgress !== undefined ? p.realProgress : 0,
       "Avance Programado (%)": p.scheduledProgress !== undefined ? p.scheduledProgress : 0,
+      "Avance de Obra Real (%)": p.obraRealProgress !== undefined ? p.obraRealProgress : 0,
+      "Avance de Obra Programado (%)": p.obraScheduledProgress !== undefined ? p.obraScheduledProgress : 0,
       "GAP (%)": p.gap !== undefined ? p.gap : 0,
       "GAP anterior (%)": p.previousGap !== undefined ? p.previousGap : 0,
       "Estado": p.status || "En tiempo",
@@ -145,6 +147,8 @@ export function parseExcelFile(dataBuffer) {
       const creg = parseDateVal(findVal(["creg", "fecha creg", "resolucion creg"]));
       const realProgress = parseNumber(findVal(["avance real", "real", "% real"]));
       const scheduledProgress = parseNumber(findVal(["avance programado", "programado", "% prog"]));
+      const obraRealProgress = parseNumber(findVal(["avance de obra real", "avance de obra", "avance obra", "obra real", "% obra", "% avance de obra"]));
+      const obraScheduledProgress = parseNumber(findVal(["avance de obra programado", "obra programado", "obra prog", "% obra prog", "% avance de obra programado"]));
       
       const rawGap = findVal(["gap (%)", "gap", "desviacion"]);
       const gap = rawGap !== "" ? parseNumber(rawGap) : calculateGap(realProgress, scheduledProgress);
@@ -165,6 +169,8 @@ export function parseExcelFile(dataBuffer) {
         creg: creg,
         realProgress,
         scheduledProgress,
+        obraRealProgress,
+        obraScheduledProgress,
         gap,
         previousGap,
         status: String(status),

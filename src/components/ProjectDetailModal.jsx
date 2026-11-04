@@ -55,7 +55,9 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
     capexUsd: Number(p?.capexUsd) || 0,
     bacCOP: Number(p?.bacCOP) || 0,
     bacUSD: Number(p?.bacUSD) || 0,
-    trmProyecto: Number(p?.trmProyecto) || 0
+    trmProyecto: Number(p?.trmProyecto) || 0,
+    obraRealProgress: p?.obraRealProgress !== undefined ? Number(p?.obraRealProgress) || 0 : (p?.avanceObra !== undefined ? Number(p?.avanceObra) || 0 : 0),
+    obraScheduledProgress: p?.obraScheduledProgress !== undefined ? Number(p?.obraScheduledProgress) || 0 : (p?.avanceObraProg !== undefined ? Number(p?.avanceObraProg) || 0 : 0)
   });
 
   const [prevProject, setPrevProject] = useState(project);
@@ -98,7 +100,9 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
       capexUsd: formData.capexUsd,
       bacCOP: formData.bacCOP,
       bacUSD: formData.bacUSD,
-      trmProyecto: formData.trmProyecto
+      trmProyecto: formData.trmProyecto,
+      obraRealProgress: formData.obraRealProgress,
+      obraScheduledProgress: formData.obraScheduledProgress
     };
 
     const isMoving = Boolean(
@@ -279,6 +283,42 @@ export const ProjectDetailModal = memo(function ProjectDetailModal({
                   value={formData.residenteElectrico}
                   onChange={(e) => handleChange("residenteElectrico", e.target.value)}
                   placeholder="Ej: Ing. María González"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none"
+                />
+              </div>
+
+              {/* % Avance de Obra */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                  <span className="font-bold text-lemony bg-navy px-1 py-0.2 rounded text-[10px]">%</span>
+                  <span>% Avance de Obra</span>
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  max="100"
+                  value={formData.obraRealProgress || ""}
+                  onChange={(e) => handleNumberChange("obraRealProgress", e.target.value)}
+                  placeholder="0.0"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none"
+                />
+              </div>
+
+              {/* % Avance de Obra Programado */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                  <span className="font-bold text-lemony bg-navy px-1 py-0.2 rounded text-[10px]">%</span>
+                  <span>% Avance de Obra Programado</span>
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  max="100"
+                  value={formData.obraScheduledProgress || ""}
+                  onChange={(e) => handleNumberChange("obraScheduledProgress", e.target.value)}
+                  placeholder="0.0"
                   className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-nashville focus:ring-2 focus:ring-nashville/20 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none"
                 />
               </div>

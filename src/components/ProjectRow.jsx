@@ -1,6 +1,5 @@
 import React, { memo, useCallback, useState } from "react";
 import { Trash2, SlidersHorizontal, Copy, Check, FolderInput } from "lucide-react";
-import { XmCell } from "./cells/XmCell";
 import { EditableTextCell } from "./cells/EditableTextCell";
 import { EditableDateCell } from "./cells/EditableDateCell";
 import { EditableNumberCell } from "./cells/EditableNumberCell";
@@ -76,31 +75,19 @@ export const ProjectRow = memo(function ProjectRow({
 
   return (
     <tr className={`hover:bg-slate-50 transition-colors group ${isEven ? "bg-white" : "bg-slate-50/50"}`}>
-      {/* Ficha del Proyecto Button (Far Left) */}
-      <td className="p-1.5 border-r border-slate-200 text-center w-[40px]">
-        {onOpenProjectDetail && (
-          <button
-            type="button"
-            onClick={() => onOpenProjectDetail(project)}
-            className="p-1.5 text-slate-400 hover:text-navy hover:bg-slate-200/70 rounded-lg transition-all cursor-pointer inline-flex items-center justify-center group-hover:text-navy shadow-2xs"
-            title="Abrir Ficha del Proyecto (Datos generales y financieros)"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </td>
-
-      {/* XM Cell */}
-      <td className="p-1.5 border-r border-slate-200">
-        <XmCell
-          value={project.xm}
-          onChange={(val) => handleFieldUpdate("xm", val)}
-        />
-      </td>
-
-      {/* Proyecto Name + Connection State Cycle Button */}
+      {/* 1. Proyecto Name + Ficha Button + Connection State Cycle Button (Primera Columna) */}
       <td className="p-1.5 border-r border-slate-200">
         <div className="flex items-center gap-1.5">
+          {onOpenProjectDetail && (
+            <button
+              type="button"
+              onClick={() => onOpenProjectDetail(project)}
+              className="p-1.5 text-slate-400 hover:text-navy hover:bg-slate-200/70 rounded-lg transition-all cursor-pointer inline-flex items-center justify-center shrink-0 shadow-2xs group-hover:text-navy"
+              title="Abrir Ficha del Proyecto (Datos generales y financieros)"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+          )}
           <EditableTextCell
             value={project.name}
             onChange={(val) => handleFieldUpdate("name", val)}
@@ -119,7 +106,7 @@ export const ProjectRow = memo(function ProjectRow({
         </div>
       </td>
 
-      {/* FPO Date */}
+      {/* 2. FPO Date */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <EditableDateCell
           value={project.fpo}
@@ -127,7 +114,7 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* COD Date */}
+      {/* 3. COD Date */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <EditableDateCell
           value={project.cod}
@@ -135,7 +122,7 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* Ven. CREG Date */}
+      {/* 4. Ven. CREG Date */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <EditableDateCell
           value={project.creg}
@@ -143,7 +130,7 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* % Avance Real */}
+      {/* 5. % Avance Real */}
       <td className="p-1.5 border-r border-slate-200 text-right">
         <EditableNumberCell
           value={project.realProgress}
@@ -155,7 +142,7 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* Avance Programado */}
+      {/* 6. Avance Programado */}
       <td className="p-1.5 border-r border-slate-200 text-right">
         <EditableNumberCell
           value={project.scheduledProgress}
@@ -167,12 +154,36 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* GAP — auto calculated */}
+      {/* 7. % Avance de Obra */}
+      <td className="p-1.5 border-r border-slate-200 text-right">
+        <EditableNumberCell
+          value={project.obraRealProgress}
+          onChange={(val) => handleFieldUpdate("obraRealProgress", val)}
+          min={0}
+          max={100}
+          className="w-16 font-bold text-slate-900"
+          align="right"
+        />
+      </td>
+
+      {/* 8. % Avance de Obra Programado */}
+      <td className="p-1.5 border-r border-slate-200 text-right">
+        <EditableNumberCell
+          value={project.obraScheduledProgress}
+          onChange={(val) => handleFieldUpdate("obraScheduledProgress", val)}
+          min={0}
+          max={100}
+          className="w-16 text-slate-700"
+          align="right"
+        />
+      </td>
+
+      {/* 9. GAP — auto calculated */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <GapBadge gap={calculatedGap} previousGap={project.previousGap} />
       </td>
 
-      {/* GAP Anterior — centered & compact */}
+      {/* 10. GAP Anterior — centered & compact */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <EditableNumberCell
           value={project.previousGap}
@@ -183,14 +194,24 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* Estado — auto calculated */}
+      {/* 11. Estado — auto calculated */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <StatusBadge status={currentStatus} />
       </td>
 
-      {/* Action: Copy Single Report, Move Portfolio & Delete */}
+      {/* 12. Action: Ficha, Copy Single Report, Move Portfolio & Delete */}
       <td className="p-1.5 text-center">
         <div className="flex items-center justify-center gap-1">
+          {onOpenProjectDetail && (
+            <button
+              type="button"
+              onClick={() => onOpenProjectDetail(project)}
+              className="p-1 text-slate-400 hover:text-navy hover:bg-slate-200/70 rounded transition-all cursor-pointer"
+              title="Abrir Ficha del Proyecto (Datos generales y financieros)"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={handleCopySingleReport}

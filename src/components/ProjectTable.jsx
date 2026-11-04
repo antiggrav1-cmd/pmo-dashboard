@@ -23,13 +23,14 @@ import {
 } from "../utils/scheduleReportService";
 
 const SORT_LABELS = {
-  xm: "Archivo XM",
   name: "Nombre del Proyecto",
   fpo: "Fecha FPO",
   cod: "Fecha COD",
   creg: "Vencimiento CREG",
-  realProgress: "% Avance Real",
-  scheduledProgress: "% Avance Programado",
+  realProgress: "% Avance",
+  scheduledProgress: "Prog (%)",
+  obraRealProgress: "% Avance de Obra",
+  obraScheduledProgress: "% Avance de Obra Programado",
   gap: "GAP (%)",
   previousGap: "GAP Anterior (%)",
   status: "Estado del Proyecto"
@@ -122,13 +123,14 @@ export const ProjectTable = memo(function ProjectTable({
   }), [projects, activeSearch, activeStatus]);
 
   const customGetters = useMemo(() => ({
-    xm: (p) => p.xm || "",
     name: (p) => p.name || "",
     fpo: (p) => p.fpo || "",
     cod: (p) => p.cod || "",
     creg: (p) => p.creg || "",
     realProgress: (p) => (p.realProgress !== "" && p.realProgress !== null && p.realProgress !== undefined) ? Number(p.realProgress) : "",
     scheduledProgress: (p) => (p.scheduledProgress !== "" && p.scheduledProgress !== null && p.scheduledProgress !== undefined) ? Number(p.scheduledProgress) : "",
+    obraRealProgress: (p) => (p.obraRealProgress !== "" && p.obraRealProgress !== null && p.obraRealProgress !== undefined) ? Number(p.obraRealProgress) : "",
+    obraScheduledProgress: (p) => (p.obraScheduledProgress !== "" && p.obraScheduledProgress !== null && p.obraScheduledProgress !== undefined) ? Number(p.obraScheduledProgress) : "",
     gap: (p) => {
       const real = Number(p.realProgress) || 0;
       const sched = Number(p.scheduledProgress) || 0;
@@ -288,24 +290,11 @@ export const ProjectTable = memo(function ProjectTable({
       )}
 
       <div className="overflow-x-auto max-h-[650px] overflow-y-auto">
-        <table className="w-full text-left border-collapse min-w-[1150px]">
+        <table className="w-full text-left border-collapse min-w-[1280px]">
           <thead className="sticky top-0 z-10 bg-navy shadow-sm">
             <tr className="bg-navy text-white text-[12px] font-semibold select-none shadow-xs">
-              {/* Ficha: 40px (Far Left) */}
-              <th className="py-3 px-1 text-center w-[40px] text-white border-r border-navy-light" title="Ficha del Proyecto">
-                <SlidersHorizontal className="w-3.5 h-3.5 mx-auto text-lemony" />
-              </th>
-
-              {/* XM: 200px */}
-              <th onClick={() => handleSort("xm")} className={getThClass("xm", "px-3 text-left w-[200px]")} title="Clic para ordenar por archivo XM">
-                <div className="flex items-center justify-between">
-                  <span>XM</span>
-                  {renderSortIndicator("xm")}
-                </div>
-              </th>
-
-              {/* Proyecto: Flexible */}
-              <th onClick={() => handleSort("name")} className={getThClass("name", "px-3 text-left min-w-[190px]")} title="Clic para ordenar por Proyecto">
+              {/* Proyecto: Flexible (Primera Columna) */}
+              <th onClick={() => handleSort("name")} className={getThClass("name", "px-3 text-left min-w-[210px]")} title="Clic para ordenar por Proyecto">
                 <div className="flex items-center justify-between">
                   <span>Proyecto</span>
                   {renderSortIndicator("name")}
@@ -353,6 +342,23 @@ export const ProjectTable = memo(function ProjectTable({
                 <div className="flex items-center justify-end gap-1">
                   <span>Prog (%)</span>
                   {renderSortIndicator("scheduledProgress")}
+                </div>
+              </th>
+
+              {/* % Avance de Obra: 120px */}
+              <th onClick={() => handleSort("obraRealProgress")} className={getThClass("obraRealProgress", "px-2 text-right w-[120px]")} title="Clic para ordenar por % Avance de Obra">
+                <div className="flex items-center justify-end gap-1">
+                  <span className="font-bold text-lemony">%</span>
+                  <span className="leading-tight text-right">avance de obra</span>
+                  {renderSortIndicator("obraRealProgress")}
+                </div>
+              </th>
+
+              {/* % Avance de Obra Programado: 140px */}
+              <th onClick={() => handleSort("obraScheduledProgress")} className={getThClass("obraScheduledProgress", "px-2 text-right w-[140px]")} title="Clic para ordenar por % Avance de Obra Programado">
+                <div className="flex items-center justify-end gap-1">
+                  <span className="leading-tight text-right">% avance de obra programado</span>
+                  {renderSortIndicator("obraScheduledProgress")}
                 </div>
               </th>
 

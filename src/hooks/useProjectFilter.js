@@ -57,7 +57,7 @@ export function useProjectFilter(projects = []) {
       let valA = a[sortField];
       let valB = b[sortField];
 
-      if (["realProgress", "scheduledProgress", "gap", "previousGap"].includes(sortField)) {
+      if (["realProgress", "scheduledProgress", "obraRealProgress", "obraScheduledProgress", "gap", "previousGap"].includes(sortField)) {
         valA = Number(valA) || 0;
         valB = Number(valB) || 0;
       } else if (sortField === "fpo" || sortField === "cod") {
