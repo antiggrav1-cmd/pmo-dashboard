@@ -27,8 +27,6 @@ const SORT_LABELS = {
   fpo: "Fecha FPO",
   cod: "Fecha COD",
   creg: "Vencimiento CREG",
-  realProgress: "% Avance",
-  scheduledProgress: "Prog (%)",
   obraRealProgress: "% Avance de Obra",
   obraScheduledProgress: "% Avance de Obra Programado",
   gap: "GAP (%)",
@@ -316,23 +314,6 @@ export const ProjectTable = memo(function ProjectTable({
                   <Calendar className="w-3 h-3 opacity-80" />
                   <span>Ven. CREG</span>
                   {renderSortIndicator("creg")}
-                </div>
-              </th>
-
-              {/* Avance Real: 95px */}
-              <th onClick={() => handleSort("realProgress")} className={getThClass("realProgress", "px-2 text-right w-[95px]")} title="Clic para ordenar por % Avance Real">
-                <div className="flex items-center justify-end gap-1">
-                  <span className="font-bold text-lemony">%</span>
-                  <span>Avance</span>
-                  {renderSortIndicator("realProgress")}
-                </div>
-              </th>
-
-              {/* Avance Prog: 95px */}
-              <th onClick={() => handleSort("scheduledProgress")} className={getThClass("scheduledProgress", "px-2 text-right w-[95px]")} title="Clic para ordenar por % Avance Programado">
-                <div className="flex items-center justify-end gap-1">
-                  <span>Prog (%)</span>
-                  {renderSortIndicator("scheduledProgress")}
                 </div>
               </th>
 

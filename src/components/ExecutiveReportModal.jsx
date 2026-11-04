@@ -111,7 +111,7 @@ const ProjectOnePager = memo(function ProjectOnePager({
         <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs flex flex-col justify-between print:p-2.5">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-              Avance &amp; Desviación
+              Avance de Obra &amp; Desviación
             </span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
               project.gap < -5 
@@ -126,19 +126,19 @@ const ProjectOnePager = memo(function ProjectOnePager({
           <div className="mt-1 space-y-2">
             <div className="flex items-end justify-between">
               <div>
-                <span className="text-[9px] font-bold text-slate-400 block">REAL</span>
-                <span className="text-2xl font-black text-navy leading-tight">{project.realProgress}%</span>
+                <span className="text-[9px] font-bold text-slate-400 block">OBRA REAL</span>
+                <span className="text-2xl font-black text-navy leading-tight">{project.obraRealProgress || 0}%</span>
               </div>
               <div className="text-right">
-                <span className="text-[9px] font-bold text-slate-400 block">PROGRAMADO</span>
+                <span className="text-[9px] font-bold text-slate-400 block">OBRA PROGRAMADO</span>
                 <span className="text-xs font-bold text-slate-700 bg-slate-200/80 px-1.5 py-0.5 rounded">
-                  {project.scheduledProgress}%
+                  {project.obraScheduledProgress || 0}%
                 </span>
               </div>
             </div>
             <TargetProgressBar 
-              real={project.realProgress || 0} 
-              scheduled={project.scheduledProgress || 0} 
+              real={project.obraRealProgress || 0} 
+              scheduled={project.obraScheduledProgress || 0} 
               size="sm" 
               showMarker={true} 
             />
@@ -918,7 +918,7 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs flex flex-col justify-between print:p-2.5">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                      Avance &amp; Desviación
+                      Avance de Obra &amp; Desviación
                     </span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
                       metrics.avgGap < -5 
@@ -933,11 +933,11 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                   <div className="mt-1 space-y-2">
                     <div className="flex items-end justify-between">
                       <div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Real</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Obra Real</span>
                         <span className="text-2xl font-black text-navy leading-none">{metrics.avgReal}%</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Meta Prog.</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Obra Prog.</span>
                         <span className="text-xs font-black text-slate-700 bg-slate-200/80 px-1.5 py-0.5 rounded inline-block leading-none">
                           {metrics.avgScheduled}%
                         </span>
@@ -1092,8 +1092,8 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                         <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[85px]">FPO</th>
                         <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[85px]">COD</th>
                         <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[85px]">Ven. CREG</th>
-                        <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[65px]">Real %</th>
-                        <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[65px]">Prog %</th>
+                        <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[75px]">Obra Real %</th>
+                        <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[75px]">Obra Prog %</th>
                         <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[70px]">GAP %</th>
                         <th className="py-2.5 px-2 text-center border-r border-navy-light/60 w-[70px]">GAP Ant.</th>
                         <th className="py-2.5 px-2 text-center w-[105px]">Tendencia</th>
@@ -1124,10 +1124,10 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                             <td className="py-2.5 px-2 text-center text-slate-600 border-r border-slate-100 tabular-nums whitespace-nowrap font-medium">{formatDate(p.creg) || "—"}</td>
 
                             {/* Real % */}
-                            <td className="py-2.5 px-2 text-center font-bold text-slate-900 border-r border-slate-100 tabular-nums">{p.realProgress}%</td>
+                            <td className="py-2.5 px-2 text-center font-bold text-slate-900 border-r border-slate-100 tabular-nums">{p.obraRealProgress || 0}%</td>
 
                             {/* Prog % */}
-                            <td className="py-2.5 px-2 text-center text-slate-600 border-r border-slate-100 tabular-nums font-medium">{p.scheduledProgress}%</td>
+                            <td className="py-2.5 px-2 text-center text-slate-600 border-r border-slate-100 tabular-nums font-medium">{p.obraScheduledProgress || 0}%</td>
 
                             {/* GAP % */}
                             <td className={`py-2.5 px-2 text-center font-black border-r border-slate-100 tabular-nums ${curr < 0 ? "text-rose-600" : "text-emerald-700"}`}>
@@ -1277,7 +1277,7 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                 <thead>
                   <tr className="bg-navy text-white text-[11px] font-semibold select-none">
                     <th className="p-2.5 border-r border-navy-light">Proyecto</th>
-                    <th className="p-2.5 text-center border-r border-navy-light w-[80px]">Real %</th>
+                    <th className="p-2.5 text-center border-r border-navy-light w-[85px]">Obra Real %</th>
                     <th className="p-2.5 text-center border-r border-navy-light w-[80px]">GAP %</th>
                     <th className="p-2.5 text-center border-r border-navy-light w-[90px]">Cronograma</th>
                     <th className="p-2.5 text-center border-r border-navy-light w-[90px]">Red</th>
@@ -1297,7 +1297,7 @@ export const ExecutiveReportModal = memo(function ExecutiveReportModal({
                     return (
                       <tr key={p.id} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                         <td className="p-2.5 font-bold text-navy border-r border-slate-200">{p.name}</td>
-                        <td className="p-2.5 text-center font-black text-slate-900 border-r border-slate-200">{p.realProgress}%</td>
+                        <td className="p-2.5 text-center font-black text-slate-900 border-r border-slate-200">{p.obraRealProgress || 0}%</td>
                         <td className={`p-2.5 text-center font-bold border-r border-slate-200 ${
                           p.gap < -10 ? "text-rose-700 font-black" :
                           p.gap < 0 ? "text-amber-800 font-bold" :

@@ -407,9 +407,9 @@ export function getPortfolioMetrics(projects = []) {
 
   projs.forEach((proj, index) => {
     if (!proj) return;
-    const real = Number(proj.realProgress) || 0;
-    const sched = Number(proj.scheduledProgress) || 0;
-    const gap = Number(proj.gap) || 0;
+    const real = Number(proj.obraRealProgress) || 0;
+    const sched = Number(proj.obraScheduledProgress) || 0;
+    const gap = Number(proj.gap !== undefined ? proj.gap : calculateGap(real, sched)) || 0;
     const prevGap = proj.previousGap !== undefined ? Number(proj.previousGap) : gap;
 
     totalReal += real;

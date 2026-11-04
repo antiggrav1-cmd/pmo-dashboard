@@ -115,31 +115,7 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* 5. % Avance Real */}
-      <td className="p-1.5 border-r border-slate-200 text-right">
-        <EditableNumberCell
-          value={project.realProgress}
-          onChange={(val) => handleFieldUpdate("realProgress", val)}
-          min={0}
-          max={100}
-          className="w-16 font-bold text-slate-900"
-          align="right"
-        />
-      </td>
-
-      {/* 6. Avance Programado */}
-      <td className="p-1.5 border-r border-slate-200 text-right">
-        <EditableNumberCell
-          value={project.scheduledProgress}
-          onChange={(val) => handleFieldUpdate("scheduledProgress", val)}
-          min={0}
-          max={100}
-          className="w-16 text-slate-700"
-          align="right"
-        />
-      </td>
-
-      {/* 7. % Avance de Obra */}
+      {/* 5. % Avance de Obra (Real) */}
       <td className="p-1.5 border-r border-slate-200 text-right">
         <EditableNumberCell
           value={project.obraRealProgress}
@@ -151,7 +127,7 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* 8. % Avance de Obra Programado */}
+      {/* 6. % Avance de Obra Programado */}
       <td className="p-1.5 border-r border-slate-200 text-right">
         <EditableNumberCell
           value={project.obraScheduledProgress}
@@ -163,12 +139,12 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* 9. GAP — auto calculated */}
+      {/* 7. GAP — auto calculated */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <GapBadge gap={calculatedGap} previousGap={project.previousGap} />
       </td>
 
-      {/* 10. GAP Anterior — centered & compact */}
+      {/* 8. GAP Anterior — centered & compact */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <EditableNumberCell
           value={project.previousGap}
@@ -179,12 +155,12 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* 11. Estado — auto calculated */}
+      {/* 9. Estado — auto calculated */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <StatusBadge status={currentStatus} />
       </td>
 
-      {/* 12. Action: Move Portfolio & Delete */}
+      {/* 10. Action: Move Portfolio & Delete */}
       <td className="p-1.5 text-center">
         <div className="flex items-center justify-center gap-1.5">
           {onOpenMoveProject && (
