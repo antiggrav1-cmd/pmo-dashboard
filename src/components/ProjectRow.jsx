@@ -28,8 +28,6 @@ export const ProjectRow = memo(function ProjectRow({
     let updated = { ...project, [field]: value };
 
     if (
-      field === "realProgress" ||
-      field === "scheduledProgress" ||
       field === "obraRealProgress" ||
       field === "obraScheduledProgress"
     ) {

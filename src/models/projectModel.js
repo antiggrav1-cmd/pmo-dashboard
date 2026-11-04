@@ -73,12 +73,10 @@ export function createProject(data = {}) {
     : (data.avanceObraProg !== undefined ? (data.avanceObraProg === "" ? 0 : Number(data.avanceObraProg) || 0) : 0);
 
   const progressMetrics = getProjectProgressAndStatus({
-    realProgress: real,
-    scheduledProgress: sched,
     obraRealProgress: obraReal,
     obraScheduledProgress: obraSched
   });
-  const gap = data.gap !== undefined ? Number(data.gap) : progressMetrics.gap;
+  const gap = progressMetrics.gap;
 
   return {
     id: data.id || `proj-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -105,7 +103,7 @@ export function createProject(data = {}) {
     obraScheduledProgress: obraSched,
     gap: gap,
     previousGap: data.previousGap !== undefined ? Number(data.previousGap) : gap,
-    status: data.status || progressMetrics.status,
+    status: progressMetrics.status,
     notes: data.notes ? String(data.notes).trim() : "",
     manager: data.manager ? String(data.manager).trim() : "",
     residenteCivil: data.residenteCivil ? String(data.residenteCivil).trim() : "",

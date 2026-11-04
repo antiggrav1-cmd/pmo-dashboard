@@ -151,12 +151,12 @@ export function parseExcelFile(dataBuffer) {
       const obraScheduledProgress = parseNumber(findVal(["avance de obra programado", "obra programado", "obra prog", "% obra prog", "% avance de obra programado"]));
       
       const rawGap = findVal(["gap (%)", "gap", "desviacion"]);
-      const gap = rawGap !== "" ? parseNumber(rawGap) : calculateGap(realProgress, scheduledProgress);
+      const gap = calculateGap(obraRealProgress, obraScheduledProgress);
       
       const rawPrevGap = findVal(["gap anterior", "anterior", "previo"]);
       const previousGap = rawPrevGap !== "" ? parseNumber(rawPrevGap) : gap;
 
-      const status = determineStatus(gap, realProgress);
+      const status = determineStatus(gap, obraRealProgress);
       const notes = findVal(["observaciones", "notas", "comentarios", "detalle"]);
       const manager = findVal(["responsable", "lider", "director", "manager"]);
 
