@@ -1,11 +1,10 @@
-import React, { memo, useCallback, useState } from "react";
-import { Trash2, SlidersHorizontal, Copy, Check, FolderInput } from "lucide-react";
+import React, { memo, useCallback } from "react";
+import { Trash2, SlidersHorizontal, FolderInput } from "lucide-react";
 import { EditableTextCell } from "./cells/EditableTextCell";
 import { EditableDateCell } from "./cells/EditableDateCell";
 import { EditableNumberCell } from "./cells/EditableNumberCell";
 import { StatusBadge, GapBadge } from "./StatusBadge";
 import { calculateGap, determineStatus } from "../utils/calculations";
-import { generateSingleProjectScheduleText } from "../utils/scheduleReportService";
 import { CONNECTION_STATES } from "../models/projectModel";
 
 const CONNECTION_STATE_STYLES = {
@@ -25,18 +24,6 @@ export const ProjectRow = memo(function ProjectRow({
   onOpenProjectDetail,
   onOpenMoveProject
 }) {
-  const [copiedSingle, setCopiedSingle] = useState(false);
-
-  const handleCopySingleReport = useCallback(async () => {
-    const textContent = generateSingleProjectScheduleText(project, portfolioName);
-    try {
-      await navigator.clipboard.writeText(textContent);
-      setCopiedSingle(true);
-      setTimeout(() => setCopiedSingle(false), 2000);
-    } catch (err) {
-      console.error("Error al copiar reporte individual:", err);
-    }
-  }, [project, portfolioName]);
   const handleFieldUpdate = useCallback((field, value) => {
     let updated = { ...project, [field]: value };
 
@@ -199,35 +186,9 @@ export const ProjectRow = memo(function ProjectRow({
         <StatusBadge status={currentStatus} />
       </td>
 
-      {/* 12. Action: Ficha, Copy Single Report, Move Portfolio & Delete */}
+      {/* 12. Action: Move Portfolio & Delete */}
       <td className="p-1.5 text-center">
-        <div className="flex items-center justify-center gap-1">
-          {onOpenProjectDetail && (
-            <button
-              type="button"
-              onClick={() => onOpenProjectDetail(project)}
-              className="p-1 text-slate-400 hover:text-navy hover:bg-slate-200/70 rounded transition-all cursor-pointer"
-              title="Abrir Ficha del Proyecto (Datos generales y financieros)"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleCopySingleReport}
-            className={`p-1 rounded transition-all cursor-pointer ${
-              copiedSingle
-                ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300"
-                : "text-slate-400 hover:text-navy hover:bg-slate-200/70"
-            }`}
-            title={`Copiar informe de avance de ${project.name || "este proyecto"} para WhatsApp/Teams`}
-          >
-            {copiedSingle ? (
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </button>
+        <div className="flex items-center justify-center gap-1.5">
           {onOpenMoveProject && (
             <button
               type="button"

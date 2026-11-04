@@ -386,8 +386,8 @@ export const ProjectTable = memo(function ProjectTable({
                 </div>
               </th>
 
-              {/* Acción: 90px */}
-              <th className="py-3 px-1.5 text-center w-[90px] text-white">
+              {/* Acción: 75px */}
+              <th className="py-3 px-1.5 text-center w-[75px] text-white">
                 <span>Acción</span>
               </th>
             </tr>
