@@ -1,4 +1,4 @@
-import { calculateGap, determineStatus } from "../utils/calculations";
+import { calculateGap, determineStatus, getProjectProgressAndStatus } from "../utils/calculations";
 import { getDefaultEquipment } from "../utils/equipmentConstants";
 
 /**
@@ -63,7 +63,6 @@ export const CONNECTION_STATES = ["DD", "Ingeniería", "Montaje", "Energizado", 
 export function createProject(data = {}) {
   const real = data.realProgress !== undefined ? Number(data.realProgress) || 0 : 0;
   const sched = data.scheduledProgress !== undefined ? Number(data.scheduledProgress) || 0 : 0;
-  const gap = data.gap !== undefined ? Number(data.gap) : calculateGap(real, sched);
   const connState = data.connectionState || (data.gridConnected ? "Energizado" : "Ingeniería");
 
   const obraReal = data.obraRealProgress !== undefined
@@ -72,6 +71,14 @@ export function createProject(data = {}) {
   const obraSched = data.obraScheduledProgress !== undefined
     ? (data.obraScheduledProgress === "" ? 0 : Number(data.obraScheduledProgress) || 0)
     : (data.avanceObraProg !== undefined ? (data.avanceObraProg === "" ? 0 : Number(data.avanceObraProg) || 0) : 0);
+
+  const progressMetrics = getProjectProgressAndStatus({
+    realProgress: real,
+    scheduledProgress: sched,
+    obraRealProgress: obraReal,
+    obraScheduledProgress: obraSched
+  });
+  const gap = data.gap !== undefined ? Number(data.gap) : progressMetrics.gap;
 
   return {
     id: data.id || `proj-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -98,7 +105,7 @@ export function createProject(data = {}) {
     obraScheduledProgress: obraSched,
     gap: gap,
     previousGap: data.previousGap !== undefined ? Number(data.previousGap) : gap,
-    status: determineStatus(gap, real),
+    status: data.status || progressMetrics.status,
     notes: data.notes ? String(data.notes).trim() : "",
     manager: data.manager ? String(data.manager).trim() : "",
     residenteCivil: data.residenteCivil ? String(data.residenteCivil).trim() : "",

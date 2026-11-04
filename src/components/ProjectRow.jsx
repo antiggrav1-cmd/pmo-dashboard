@@ -4,7 +4,7 @@ import { EditableTextCell } from "./cells/EditableTextCell";
 import { EditableDateCell } from "./cells/EditableDateCell";
 import { EditableNumberCell } from "./cells/EditableNumberCell";
 import { StatusBadge, GapBadge } from "./StatusBadge";
-import { calculateGap, determineStatus } from "../utils/calculations";
+import { calculateGap, determineStatus, getProjectProgressAndStatus } from "../utils/calculations";
 import { CONNECTION_STATES } from "../models/projectModel";
 
 const CONNECTION_STATE_STYLES = {
@@ -27,21 +27,21 @@ export const ProjectRow = memo(function ProjectRow({
   const handleFieldUpdate = useCallback((field, value) => {
     let updated = { ...project, [field]: value };
 
-    if (field === "realProgress" || field === "scheduledProgress") {
-      const real = field === "realProgress" ? Number(value) || 0 : Number(project.realProgress) || 0;
-      const sched = field === "scheduledProgress" ? Number(value) || 0 : Number(project.scheduledProgress) || 0;
-      const calculatedGap = calculateGap(real, sched);
-      updated.gap = calculatedGap;
-      updated.status = determineStatus(calculatedGap, real);
+    if (
+      field === "realProgress" ||
+      field === "scheduledProgress" ||
+      field === "obraRealProgress" ||
+      field === "obraScheduledProgress"
+    ) {
+      const metrics = getProjectProgressAndStatus(updated);
+      updated.gap = metrics.gap;
+      updated.status = metrics.status;
     }
 
     onUpdateProject(updated);
   }, [project, onUpdateProject]);
 
-  const realProgressNum = Number(project.realProgress) || 0;
-  const schedProgressNum = Number(project.scheduledProgress) || 0;
-  const calculatedGap = calculateGap(realProgressNum, schedProgressNum);
-  const currentStatus = determineStatus(calculatedGap, realProgressNum);
+  const { gap: calculatedGap, status: currentStatus } = getProjectProgressAndStatus(project);
 
   // 3-state connection cycle
   const connState = project.connectionState || "Ingeniería";

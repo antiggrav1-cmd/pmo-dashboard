@@ -24,6 +24,30 @@ export function determineStatus(gap, realProgress = null) {
 }
 
 /**
+ * Resolves effective progress metrics (Real, Scheduled, GAP, and Status) for a project.
+ * Uses % avance de obra (obraRealProgress / obraScheduledProgress) as the primary basis
+ * for GAP and Estado when available/entered; falls back to general project progress
+ * (realProgress / scheduledProgress) if obra metrics are not yet registered.
+ */
+export function getProjectProgressAndStatus(project = {}) {
+  const obraRealRaw = project.obraRealProgress;
+  const obraSchedRaw = project.obraScheduledProgress;
+
+  // Has obra if either field is explicitly registered (> 0 or non-empty string that parses > 0)
+  const hasObra = (
+    (obraRealRaw !== undefined && obraRealRaw !== null && obraRealRaw !== "" && Number(obraRealRaw) > 0) ||
+    (obraSchedRaw !== undefined && obraSchedRaw !== null && obraSchedRaw !== "" && Number(obraSchedRaw) > 0)
+  );
+
+  const real = hasObra ? (Number(obraRealRaw) || 0) : (Number(project.realProgress) || 0);
+  const sched = hasObra ? (Number(obraSchedRaw) || 0) : (Number(project.scheduledProgress) || 0);
+  const gap = calculateGap(real, sched);
+  const status = determineStatus(gap, real);
+
+  return { real, sched, gap, status, hasObra };
+}
+
+/**
  * Formats a date string to display DD/MM/YYYY
  */
 export function formatDate(dateStr) {

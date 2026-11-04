@@ -19,7 +19,7 @@ import {
   calculateGap,
   determineStatus,
   formatDate,
-  getPortfolioMetrics
+  getPortfolioMetrics, getProjectProgressAndStatus
 } from "../utils/calculations";
 import { generatePortfolioScheduleSummaryText } from "../utils/scheduleReportService";
 
@@ -112,10 +112,10 @@ export const ScheduleReportModal = memo(function ScheduleReportModal({
 
   const projectItems = useMemo(() => {
     return (projects || []).filter(Boolean).map((p) => {
-      const real = Number(p.realProgress) || 0;
-      const sched = Number(p.scheduledProgress) || 0;
-      const gap = calculateGap(real, sched);
-      const status = determineStatus(gap, real);
+
+
+
+      const { real, sched, gap, status } = getProjectProgressAndStatus(p);
       return {
         ...p,
         realProgressNum: real,

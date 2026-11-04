@@ -1,4 +1,4 @@
-import { calculateGap, determineStatus, formatDate, getPortfolioMetrics } from "./calculations";
+import { calculateGap, determineStatus, formatDate, getPortfolioMetrics, getProjectProgressAndStatus } from "./calculations";
 
 /**
  * Generates an executive consolidated schedule comparison and diagnosis report across all projects in a portfolio
@@ -26,13 +26,10 @@ export function generatePortfolioScheduleSummaryText(projects = [], portfolioNam
   const criticalProjects = [];
 
   const projectSummaries = projects.map((p, idx) => {
-    const real = Number(p.realProgress) || 0;
-    const sched = Number(p.scheduledProgress) || 0;
-    const gap = calculateGap(real, sched);
+    const { real, sched, gap, status } = getProjectProgressAndStatus(p);
     const prevGap = p.previousGap !== "" && p.previousGap !== null && p.previousGap !== undefined
       ? Number(p.previousGap)
       : null;
-    const status = determineStatus(gap, real);
 
     // Count states
     if (real >= 100 || status === "Completado") completedCount++;
@@ -140,13 +137,10 @@ export function generateSingleProjectScheduleText(project = {}, portfolioName = 
     day: "numeric"
   });
 
-  const real = Number(project.realProgress) || 0;
-  const sched = Number(project.scheduledProgress) || 0;
-  const gap = calculateGap(real, sched);
+  const { real, sched, gap, status } = getProjectProgressAndStatus(project);
   const prevGap = project.previousGap !== "" && project.previousGap !== null && project.previousGap !== undefined
     ? Number(project.previousGap)
     : null;
-  const status = determineStatus(gap, real);
 
   // Status emoji
   let emoji = "🟢";

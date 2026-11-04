@@ -16,7 +16,7 @@ import {
 import { ProjectRow } from "./ProjectRow";
 import { ScheduleReportModal } from "./ScheduleReportModal";
 import { useTableSort } from "../hooks/useTableSort";
-import { calculateGap, determineStatus } from "../utils/calculations";
+import { calculateGap, determineStatus, getProjectProgressAndStatus } from "../utils/calculations";
 import { 
   generatePortfolioScheduleSummaryText, 
   generateSingleProjectScheduleText 
@@ -131,18 +131,9 @@ export const ProjectTable = memo(function ProjectTable({
     scheduledProgress: (p) => (p.scheduledProgress !== "" && p.scheduledProgress !== null && p.scheduledProgress !== undefined) ? Number(p.scheduledProgress) : "",
     obraRealProgress: (p) => (p.obraRealProgress !== "" && p.obraRealProgress !== null && p.obraRealProgress !== undefined) ? Number(p.obraRealProgress) : "",
     obraScheduledProgress: (p) => (p.obraScheduledProgress !== "" && p.obraScheduledProgress !== null && p.obraScheduledProgress !== undefined) ? Number(p.obraScheduledProgress) : "",
-    gap: (p) => {
-      const real = Number(p.realProgress) || 0;
-      const sched = Number(p.scheduledProgress) || 0;
-      return calculateGap(real, sched);
-    },
+    gap: (p) => getProjectProgressAndStatus(p).gap,
     previousGap: (p) => (p.previousGap !== "" && p.previousGap !== null && p.previousGap !== undefined) ? Number(p.previousGap) : "",
-    status: (p) => {
-      const real = Number(p.realProgress) || 0;
-      const sched = Number(p.scheduledProgress) || 0;
-      const calculatedGap = calculateGap(real, sched);
-      return determineStatus(calculatedGap, real);
-    }
+    status: (p) => getProjectProgressAndStatus(p).status
   }), []);
 
   const { sortField, sortDirection, handleSort, resetSort, sortedItems: finalProjects } = useTableSort(filteredProjects, {
@@ -423,7 +414,7 @@ export const ProjectTable = memo(function ProjectTable({
         <div className="text-xs text-slate-500 font-medium flex items-center gap-4">
           <span>Mostrando: <b>{finalProjects.length}</b> / <b>{projects.length}</b> proyectos</span>
           <span className="hidden sm:inline text-slate-400">|</span>
-          <span className="hidden sm:inline">GAP = Avance Real − Avance Programado</span>
+          <span className="hidden sm:inline">GAP = Avance de Obra Real − Avance de Obra Programado</span>
         </div>
       </div>
 
