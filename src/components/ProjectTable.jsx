@@ -11,7 +11,11 @@ import {
   Check,
   Download,
   FileDown,
-  FileText
+  FileText,
+  Activity,
+  HardHat,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { ProjectRow } from "./ProjectRow";
 import { ScheduleReportModal } from "./ScheduleReportModal";
@@ -27,9 +31,11 @@ const SORT_LABELS = {
   fpo: "Fecha FPO",
   cod: "Fecha COD",
   creg: "Vencimiento CREG",
-  obraRealProgress: "% Avance de Obra",
-  obraScheduledProgress: "% Avance de Obra Programado",
-  gap: "GAP (%)",
+  realProgress: "% General Real",
+  scheduledProgress: "% Real Programado",
+  obraRealProgress: "% Obra Real",
+  obraScheduledProgress: "% Obra Programado",
+  gap: "Gap de Obra (%)",
   previousGap: "GAP Anterior (%)",
   status: "Estado del Proyecto"
 };
@@ -47,6 +53,8 @@ export const ProjectTable = memo(function ProjectTable({
 }) {
   const [copiedGeneral, setCopiedGeneral] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isGeneralExpanded, setIsGeneralExpanded] = useState(true);
+  const [isObraExpanded, setIsObraExpanded] = useState(true);
 
   // Copy full consolidated summary report for chat
   const handleCopyConsolidatedReport = useCallback(async () => {
@@ -281,17 +289,18 @@ export const ProjectTable = memo(function ProjectTable({
       <div className="overflow-x-auto max-h-[650px] overflow-y-auto">
         <table className="w-full text-left border-collapse min-w-[1280px]">
           <thead className="sticky top-0 z-10 bg-navy shadow-sm">
-            <tr className="bg-navy text-white text-[12px] font-semibold select-none shadow-xs">
-              {/* Proyecto: Flexible (Primera Columna) */}
-              <th onClick={() => handleSort("name")} className={getThClass("name", "px-3 text-left min-w-[210px]")} title="Clic para ordenar por Proyecto">
+            {/* Fila 1: Grupos y Columnas Principales */}
+            <tr className="bg-navy text-white text-[11px] font-bold select-none border-b border-navy-light/60">
+              {/* Proyecto: rowSpan=2 */}
+              <th rowSpan={2} onClick={() => handleSort("name")} className={getThClass("name", "px-3 text-left min-w-[210px] align-bottom pb-2.5")} title="Clic para ordenar por Proyecto">
                 <div className="flex items-center justify-between">
                   <span>Proyecto</span>
                   {renderSortIndicator("name")}
                 </div>
               </th>
 
-              {/* FPO: 125px */}
-              <th onClick={() => handleSort("fpo")} className={getThClass("fpo", "px-2 text-center w-[125px]")} title="Clic para ordenar por Fecha FPO">
+              {/* FPO: rowSpan=2 */}
+              <th rowSpan={2} onClick={() => handleSort("fpo")} className={getThClass("fpo", "px-2 text-center w-[115px] align-bottom pb-2.5")} title="Clic para ordenar por Fecha FPO">
                 <div className="flex items-center justify-center gap-1">
                   <Calendar className="w-3 h-3 opacity-80" />
                   <span>FPO</span>
@@ -299,8 +308,8 @@ export const ProjectTable = memo(function ProjectTable({
                 </div>
               </th>
 
-              {/* COD: 125px */}
-              <th onClick={() => handleSort("cod")} className={getThClass("cod", "px-2 text-center w-[125px]")} title="Clic para ordenar por Fecha COD">
+              {/* COD: rowSpan=2 */}
+              <th rowSpan={2} onClick={() => handleSort("cod")} className={getThClass("cod", "px-2 text-center w-[115px] align-bottom pb-2.5")} title="Clic para ordenar por Fecha COD">
                 <div className="flex items-center justify-center gap-1">
                   <Calendar className="w-3 h-3 opacity-80" />
                   <span>COD</span>
@@ -308,8 +317,8 @@ export const ProjectTable = memo(function ProjectTable({
                 </div>
               </th>
 
-              {/* Ven. CREG: 130px */}
-              <th onClick={() => handleSort("creg")} className={getThClass("creg", "px-2 text-center w-[130px]")} title="Clic para ordenar por Vencimiento CREG">
+              {/* Ven. CREG: rowSpan=2 */}
+              <th rowSpan={2} onClick={() => handleSort("creg")} className={getThClass("creg", "px-2 text-center w-[120px] align-bottom pb-2.5")} title="Clic para ordenar por Vencimiento CREG">
                 <div className="flex items-center justify-center gap-1">
                   <Calendar className="w-3 h-3 opacity-80" />
                   <span>Ven. CREG</span>
@@ -317,50 +326,164 @@ export const ProjectTable = memo(function ProjectTable({
                 </div>
               </th>
 
-              {/* % Avance de Obra: 120px */}
-              <th onClick={() => handleSort("obraRealProgress")} className={getThClass("obraRealProgress", "px-2 text-right w-[120px]")} title="Clic para ordenar por % Avance de Obra">
-                <div className="flex items-center justify-end gap-1">
-                  <span className="font-bold text-lemony">%</span>
-                  <span className="leading-tight text-right">avance de obra</span>
-                  {renderSortIndicator("obraRealProgress")}
+              {/* GRUPO 1: Avance General / Cronograma */}
+              <th 
+                colSpan={isGeneralExpanded ? 2 : 1} 
+                className="py-1.5 px-2.5 border-r border-navy-light bg-sky-950/80 border-b border-sky-400/40 text-center"
+              >
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Activity className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                    <span className="text-[11px] font-black uppercase tracking-wider text-sky-200 truncate">
+                      Avance General
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsGeneralExpanded((prev) => !prev);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-900/90 hover:bg-sky-800 text-sky-200 border border-sky-700/60 transition-all cursor-pointer shadow-2xs"
+                    title={isGeneralExpanded ? "Contraer: ocultar % Real Programado" : "Expandir: mostrar % Real Programado"}
+                  >
+                    {isGeneralExpanded ? (
+                      <>
+                        <ChevronLeft className="w-3 h-3 text-sky-300" />
+                        <span className="hidden md:inline">Contraer</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronRight className="w-3 h-3 text-sky-300" />
+                        <span className="hidden md:inline">Expandir</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </th>
 
-              {/* % Avance de Obra Programado: 140px */}
-              <th onClick={() => handleSort("obraScheduledProgress")} className={getThClass("obraScheduledProgress", "px-2 text-right w-[140px]")} title="Clic para ordenar por % Avance de Obra Programado">
-                <div className="flex items-center justify-end gap-1">
-                  <span className="leading-tight text-right">% avance de obra programado</span>
-                  {renderSortIndicator("obraScheduledProgress")}
+              {/* GRUPO 2: Avance de Obra */}
+              <th 
+                colSpan={isObraExpanded ? 3 : 2} 
+                className="py-1.5 px-2.5 border-r border-navy-light bg-amber-950/80 border-b border-amber-400/40 text-center"
+              >
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <HardHat className="w-3.5 h-3.5 text-lemony shrink-0" />
+                    <span className="text-[11px] font-black uppercase tracking-wider text-lemony truncate">
+                      Avance de Obra
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsObraExpanded((prev) => !prev);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-900/90 hover:bg-amber-800 text-lemony border border-amber-700/60 transition-all cursor-pointer shadow-2xs"
+                    title={isObraExpanded ? "Contraer: ocultar % Obra Programado" : "Expandir: mostrar % Obra Programado"}
+                  >
+                    {isObraExpanded ? (
+                      <>
+                        <ChevronLeft className="w-3 h-3 text-lemony" />
+                        <span className="hidden md:inline">Contraer</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronRight className="w-3 h-3 text-lemony" />
+                        <span className="hidden md:inline">Expandir</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </th>
 
-              {/* GAP: 85px */}
-              <th onClick={() => handleSort("gap")} className={getThClass("gap", "px-2 text-center w-[85px]")} title="Clic para ordenar por GAP (%)">
-                <div className="flex items-center justify-center gap-1">
-                  <span>GAP (%)</span>
-                  {renderSortIndicator("gap")}
-                </div>
-              </th>
-
-              {/* GAP anterior: 85px */}
-              <th onClick={() => handleSort("previousGap")} className={getThClass("previousGap", "px-2 text-center w-[85px]")} title="Clic para ordenar por GAP Anterior">
+              {/* GAP Anterior: rowSpan=2 */}
+              <th rowSpan={2} onClick={() => handleSort("previousGap")} className={getThClass("previousGap", "px-2 text-center w-[85px] align-bottom pb-2.5")} title="Clic para ordenar por GAP Anterior">
                 <div className="flex items-center justify-center gap-1">
                   <span>GAP Ant</span>
                   {renderSortIndicator("previousGap")}
                 </div>
               </th>
 
-              {/* Estado: 110px */}
-              <th onClick={() => handleSort("status")} className={getThClass("status", "px-2 text-center w-[110px]")} title="Clic para ordenar por Estado">
+              {/* Estado: rowSpan=2 */}
+              <th rowSpan={2} onClick={() => handleSort("status")} className={getThClass("status", "px-2 text-center w-[110px] align-bottom pb-2.5")} title="Clic para ordenar por Estado">
                 <div className="flex items-center justify-center gap-1">
                   <span>Estado</span>
                   {renderSortIndicator("status")}
                 </div>
               </th>
 
-              {/* Acción: 75px */}
-              <th className="py-3 px-1.5 text-center w-[75px] text-white">
+              {/* Acción: rowSpan=2 */}
+              <th rowSpan={2} className="py-3 px-1.5 text-center w-[75px] text-white align-bottom pb-2.5">
                 <span>Acción</span>
+              </th>
+            </tr>
+
+            {/* Fila 2: Sub-encabezados de los grupos */}
+            <tr className="bg-navy text-white text-[11px] font-semibold select-none shadow-xs border-b border-navy-light">
+              {/* Sub 1: % General Real */}
+              <th 
+                onClick={() => handleSort("realProgress")} 
+                className={getThClass("realProgress", "px-2 text-right w-[95px] bg-sky-950/40")} 
+                title="Clic para ordenar por % General Real"
+              >
+                <div className="flex items-center justify-end gap-1">
+                  <span className="text-sky-300 font-bold">% Gen. Real</span>
+                  {renderSortIndicator("realProgress")}
+                </div>
+              </th>
+
+              {/* Sub 2: % Real Programado (si está expandido) */}
+              {isGeneralExpanded && (
+                <th 
+                  onClick={() => handleSort("scheduledProgress")} 
+                  className={getThClass("scheduledProgress", "px-2 text-right w-[95px] bg-sky-950/40")} 
+                  title="Clic para ordenar por % Real Programado"
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span className="text-sky-200">% Prog</span>
+                    {renderSortIndicator("scheduledProgress")}
+                  </div>
+                </th>
+              )}
+
+              {/* Sub 3: % Obra Real */}
+              <th 
+                onClick={() => handleSort("obraRealProgress")} 
+                className={getThClass("obraRealProgress", "px-2 text-right w-[105px] bg-amber-950/40")} 
+                title="Clic para ordenar por % Obra Real"
+              >
+                <div className="flex items-center justify-end gap-1">
+                  <span className="font-bold text-lemony">% Obra Real</span>
+                  {renderSortIndicator("obraRealProgress")}
+                </div>
+              </th>
+
+              {/* Sub 4: % Obra Programado (si está expandido) */}
+              {isObraExpanded && (
+                <th 
+                  onClick={() => handleSort("obraScheduledProgress")} 
+                  className={getThClass("obraScheduledProgress", "px-2 text-right w-[110px] bg-amber-950/40")} 
+                  title="Clic para ordenar por % Obra Programado"
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span className="text-amber-200">% Obra Prog</span>
+                    {renderSortIndicator("obraScheduledProgress")}
+                  </div>
+                </th>
+              )}
+
+              {/* Sub 5: Gap de Obra */}
+              <th 
+                onClick={() => handleSort("gap")} 
+                className={getThClass("gap", "px-2 text-center w-[85px] bg-amber-950/40")} 
+                title="Clic para ordenar por Gap de Obra (%)"
+              >
+                <div className="flex items-center justify-center gap-1">
+                  <span className="font-bold text-white">Gap Obra</span>
+                  {renderSortIndicator("gap")}
+                </div>
               </th>
             </tr>
           </thead>
@@ -372,6 +495,8 @@ export const ProjectTable = memo(function ProjectTable({
                 project={project}
                 portfolioName={portfolioName}
                 isEven={idx % 2 === 0}
+                isGeneralExpanded={isGeneralExpanded}
+                isObraExpanded={isObraExpanded}
                 onUpdateProject={onUpdateProject}
                 onDeleteProject={onDeleteProject}
                 onOpenProjectDetail={onOpenProjectDetail}
@@ -395,7 +520,7 @@ export const ProjectTable = memo(function ProjectTable({
         <div className="text-xs text-slate-500 font-medium flex items-center gap-4">
           <span>Mostrando: <b>{finalProjects.length}</b> / <b>{projects.length}</b> proyectos</span>
           <span className="hidden sm:inline text-slate-400">|</span>
-          <span className="hidden sm:inline">GAP = Avance de Obra Real − Avance de Obra Programado</span>
+          <span className="hidden sm:inline font-semibold">Gap de Obra = % Obra Real − % Obra Programado</span>
         </div>
       </div>
 

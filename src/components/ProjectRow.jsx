@@ -19,6 +19,8 @@ export const ProjectRow = memo(function ProjectRow({
   project,
   portfolioName = "",
   isEven = false,
+  isGeneralExpanded = true,
+  isObraExpanded = true,
   onUpdateProject,
   onDeleteProject,
   onOpenProjectDetail,
@@ -115,8 +117,36 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* 5. % Avance de Obra (Real) */}
-      <td className="p-1.5 border-r border-slate-200 text-right">
+      {/* --- GRUPO 1: AVANCE GENERAL / CRONOGRAMA --- */}
+      {/* 5. % General Real */}
+      <td className="p-1.5 border-r border-slate-200 text-right bg-sky-50/20">
+        <EditableNumberCell
+          value={project.realProgress}
+          onChange={(val) => handleFieldUpdate("realProgress", val)}
+          min={0}
+          max={100}
+          className="w-16 font-bold text-sky-950"
+          align="right"
+        />
+      </td>
+
+      {/* 6. % Real Programado (Secundaria: visible solo si Avance General está expandido) */}
+      {isGeneralExpanded && (
+        <td className="p-1.5 border-r border-slate-200 text-right bg-sky-50/20">
+          <EditableNumberCell
+            value={project.scheduledProgress}
+            onChange={(val) => handleFieldUpdate("scheduledProgress", val)}
+            min={0}
+            max={100}
+            className="w-16 text-slate-700"
+            align="right"
+          />
+        </td>
+      )}
+
+      {/* --- GRUPO 2: AVANCE DE OBRA --- */}
+      {/* 7. % Obra Real */}
+      <td className="p-1.5 border-r border-slate-200 text-right bg-amber-50/20">
         <EditableNumberCell
           value={project.obraRealProgress}
           onChange={(val) => handleFieldUpdate("obraRealProgress", val)}
@@ -127,24 +157,27 @@ export const ProjectRow = memo(function ProjectRow({
         />
       </td>
 
-      {/* 6. % Avance de Obra Programado */}
-      <td className="p-1.5 border-r border-slate-200 text-right">
-        <EditableNumberCell
-          value={project.obraScheduledProgress}
-          onChange={(val) => handleFieldUpdate("obraScheduledProgress", val)}
-          min={0}
-          max={100}
-          className="w-16 text-slate-700"
-          align="right"
-        />
-      </td>
+      {/* 8. % Obra Programado (Secundaria: visible solo si Avance de Obra está expandido) */}
+      {isObraExpanded && (
+        <td className="p-1.5 border-r border-slate-200 text-right bg-amber-50/20">
+          <EditableNumberCell
+            value={project.obraScheduledProgress}
+            onChange={(val) => handleFieldUpdate("obraScheduledProgress", val)}
+            min={0}
+            max={100}
+            className="w-16 text-slate-700"
+            align="right"
+          />
+        </td>
+      )}
 
-      {/* 7. GAP — auto calculated */}
-      <td className="p-1.5 border-r border-slate-200 text-center">
+      {/* 9. Gap de Obra — calculado exclusivamente con Avance de Obra */}
+      <td className="p-1.5 border-r border-slate-200 text-center bg-amber-50/20">
         <GapBadge gap={calculatedGap} previousGap={project.previousGap} />
       </td>
 
-      {/* 8. GAP Anterior — centered & compact */}
+      {/* --- COLUMNAS DE SEGUIMIENTO --- */}
+      {/* 10. GAP Anterior — centered & compact */}
       <td className="p-1.5 border-r border-slate-200 text-center">
         <EditableNumberCell
           value={project.previousGap}
